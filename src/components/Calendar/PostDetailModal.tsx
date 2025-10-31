@@ -8,6 +8,7 @@ interface PostDetailModalProps {
     id: string;
     title: string | null;
     caption: string | null;
+    platform_captions?: Record<string, string> | null;
     status: 'draft' | 'scheduled' | 'published' | 'failed';
     scheduled_for: string | null;
     platforms: string[];
@@ -18,8 +19,37 @@ interface PostDetailModalProps {
 
 export function PostDetailModal({ isOpen, onClose, post, onEdit, onDelete }: PostDetailModalProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [selectedPlatform, setSelectedPlatform] = useState<string>('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedCaption, setEditedCaption] = useState('');
 
   if (!isOpen || !post) return null;
+
+  if (selectedPlatform === '' && post.platforms.length > 0) {
+    setSelectedPlatform(post.platforms[0]);
+  }
+
+  const getCurrentCaption = () => {
+    if (isEditing) return editedCaption;
+    if (post.platform_captions && selectedPlatform) {
+      return post.platform_captions[selectedPlatform] || post.caption || '';
+    }
+    return post.caption || '';
+  };
+
+  const handleStartEdit = () => {
+    setIsEditing(true);
+    setEditedCaption(getCurrentCaption());
+  };
+
+  const handleSaveEdit = async () => {
+    setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditedCaption('');
+  };
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -145,14 +175,65 @@ export function PostDetailModal({ isOpen, onClose, post, onEdit, onDelete }: Pos
             </div>
           </div>
 
-          {post.caption && (
-            <div>
-              <h4 className="text-sm font-semibold text-slate-700 mb-3">Caption</h4>
-              <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
-                <p className="text-slate-700 whitespace-pre-wrap leading-relaxed">{post.caption}</p>
-              </div>
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-semibold text-slate-700">Caption</h4>
+              {post.platform_captions && post.platforms.length > 1 && (
+                <div className="flex gap-2">
+                  {post.platforms.map((platform) => (
+                    <button
+                      key={platform}
+                      onClick={() => setSelectedPlatform(platform)}
+                      className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
+                        selectedPlatform === platform
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {platform.charAt(0).toUpperCase() + platform.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+            <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+              {isEditing ? (
+                <textarea
+                  value={editedCaption}
+                  onChange={(e) => setEditedCaption(e.target.value)}
+                  rows={6}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              ) : (
+                <p className="text-slate-700 whitespace-pre-wrap leading-relaxed">
+                  {getCurrentCaption() || 'No caption'}
+                </p>
+              )}
+            </div>
+            {isEditing ? (
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={handleCancelEdit}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                >
+                  Save
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleStartEdit}
+                className="mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Edit Caption
+              </button>
+            )}
+          </div>
 
           <div className="flex gap-3 pt-4 border-t border-slate-200">
             {onEdit && (

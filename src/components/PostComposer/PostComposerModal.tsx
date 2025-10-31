@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, ArrowRight, ArrowLeft, Sparkles, Upload, Wand2, Calendar as CalendarIcon, Send } from 'lucide-react';
+import { X, ArrowRight, ArrowLeft, Sparkles, Upload, Wand2, Calendar as CalendarIcon, Send, Save } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 
@@ -7,6 +7,7 @@ interface PostComposerModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialDate?: Date;
+  initialDraft?: any;
   onPostCreated?: () => void;
 }
 
@@ -16,7 +17,7 @@ interface GeneratedCaption {
   hashtags: string[];
 }
 
-export function PostComposerModal({ isOpen, onClose, initialDate, onPostCreated }: PostComposerModalProps) {
+export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, onPostCreated }: PostComposerModalProps) {
   const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -28,6 +29,7 @@ export function PostComposerModal({ isOpen, onClose, initialDate, onPostCreated 
   const [generatedCaptions, setGeneratedCaptions] = useState<GeneratedCaption[]>([]);
   const [selectedCaption, setSelectedCaption] = useState<string>('');
   const [customCaption, setCustomCaption] = useState('');
+  const [platformCaptions, setPlatformCaptions] = useState<Record<string, string>>({});
 
   const [uploadedAssets, setUploadedAssets] = useState<File[]>([]);
   const [assetPreviews, setAssetPreviews] = useState<string[]>([]);
@@ -40,15 +42,37 @@ export function PostComposerModal({ isOpen, onClose, initialDate, onPostCreated 
   const [postTitle, setPostTitle] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
+      setHasUnsavedChanges(true);
       triggerAutoSave();
     }
     return () => {
       if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
     };
   }, [topic, customCaption, selectedPlatforms, uploadedAssets]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setHasUnsavedChanges(false);
+      if (initialDraft) {
+        setPostTitle(initialDraft.title || '');
+        setTopic(initialDraft.title || '');
+        setCustomCaption(initialDraft.caption || '');
+        setSelectedPlatforms(initialDraft.selected_platforms || ['instagram']);
+        if (initialDraft.platform_captions) {
+          setPlatformCaptions(initialDraft.platform_captions);
+        }
+        if (initialDraft.scheduled_for) {
+          setScheduledDate(new Date(initialDraft.scheduled_for));
+          setScheduleType('later');
+        }
+      }
+    }
+  }, [isOpen, initialDraft]);
 
   const triggerAutoSave = () => {
     if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
@@ -66,19 +90,50 @@ export function PostComposerModal({ isOpen, onClose, initialDate, onPostCreated 
     setIsSaving(true);
     try {
       const caption = customCaption || selectedCaption;
+      const platformCaptionsData = Object.keys(platformCaptions).length > 0 ? platformCaptions : null;
+
       await supabase.from('posts').upsert({
         user_id: user.id,
         title: postTitle || topic,
         caption,
+        platform_captions: platformCaptionsData,
+        selected_platforms: selectedPlatforms,
         status: 'draft',
         updated_at: new Date().toISOString(),
       });
       setLastSaved(new Date());
+      setHasUnsavedChanges(false);
     } catch (error) {
       console.error('Auto-save failed:', error);
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleManualSave = async () => {
+    await autoSaveDraft();
+  };
+
+  const handleClose = () => {
+    if (hasUnsavedChanges && (topic.trim() || customCaption.trim())) {
+      setShowExitConfirm(true);
+    } else {
+      onClose();
+      resetForm();
+    }
+  };
+
+  const handleExitWithoutSaving = () => {
+    setShowExitConfirm(false);
+    onClose();
+    resetForm();
+  };
+
+  const handleSaveAndExit = async () => {
+    await autoSaveDraft();
+    setShowExitConfirm(false);
+    onClose();
+    resetForm();
   };
 
   const togglePlatform = (platform: string) => {
@@ -114,6 +169,11 @@ export function PostComposerModal({ isOpen, onClose, initialDate, onPostCreated 
       setGeneratedCaptions(data.captions || []);
       if (data.captions && data.captions.length > 0) {
         setSelectedCaption(data.captions[0].caption);
+        const captionsMap: Record<string, string> = {};
+        data.captions.forEach((item: GeneratedCaption) => {
+          captionsMap[item.platform] = item.caption;
+        });
+        setPlatformCaptions(captionsMap);
       }
     } catch (error) {
       console.error('Error generating captions:', error);
@@ -144,12 +204,16 @@ export function PostComposerModal({ isOpen, onClose, initialDate, onPostCreated 
         ? new Date(`${scheduledDate.toISOString().split('T')[0]}T${scheduledTime}`)
         : null;
 
+      const platformCaptionsData = Object.keys(platformCaptions).length > 0 ? platformCaptions : null;
+
       const { data: post, error: postError } = await supabase
         .from('posts')
         .insert({
           user_id: user.id,
           title: postTitle || topic,
           caption,
+          platform_captions: platformCaptionsData,
+          selected_platforms: selectedPlatforms,
           status: scheduleType === 'now' ? 'published' : 'scheduled',
           scheduled_for: scheduledFor?.toISOString(),
           published_at: scheduleType === 'now' ? new Date().toISOString() : null,
@@ -175,9 +239,11 @@ export function PostComposerModal({ isOpen, onClose, initialDate, onPostCreated 
     setCustomCaption('');
     setSelectedCaption('');
     setGeneratedCaptions([]);
+    setPlatformCaptions({});
     setUploadedAssets([]);
     setAssetPreviews([]);
     setPostTitle('');
+    setSelectedPlatforms(['instagram']);
   };
 
   if (!isOpen) return null;
@@ -227,7 +293,15 @@ export function PostComposerModal({ isOpen, onClose, initialDate, onPostCreated 
                 Last saved: {lastSaved.toLocaleTimeString()}
               </span>
             )}
-            <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-lg">
+            <button
+              onClick={handleManualSave}
+              disabled={isSaving || !topic.trim()}
+              className="px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              <Save className="w-4 h-4" />
+              Save Draft
+            </button>
+            <button onClick={handleClose} className="p-2 hover:bg-slate-100 rounded-lg">
               <X className="w-5 h-5 text-slate-600" />
             </button>
           </div>
@@ -485,7 +559,16 @@ export function PostComposerModal({ isOpen, onClose, initialDate, onPostCreated 
                     <input
                       type="date"
                       value={scheduledDate.toISOString().split('T')[0]}
-                      onChange={(e) => setScheduledDate(new Date(e.target.value))}
+                      onChange={(e) => {
+                        const newDate = e.target.value;
+                        if (newDate) {
+                          try {
+                            setScheduledDate(new Date(newDate + 'T00:00:00'));
+                          } catch (error) {
+                            console.error('Invalid date:', error);
+                          }
+                        }
+                      }}
                       className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
@@ -530,7 +613,7 @@ export function PostComposerModal({ isOpen, onClose, initialDate, onPostCreated 
 
         <div className="sticky bottom-0 bg-white border-t border-slate-200 p-6 flex items-center justify-between">
           <button
-            onClick={() => step > 1 ? setStep(step - 1) : onClose()}
+            onClick={() => step > 1 ? setStep(step - 1) : handleClose()}
             className="px-6 py-2 border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -556,6 +639,31 @@ export function PostComposerModal({ isOpen, onClose, initialDate, onPostCreated 
           </button>
         </div>
       </div>
+
+      {showExitConfirm && (
+        <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 rounded-2xl">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl">
+            <h3 className="text-xl font-bold text-slate-900 mb-2">Save Draft?</h3>
+            <p className="text-slate-600 mb-6">
+              You have unsaved changes. Would you like to save this as a draft before closing?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={handleExitWithoutSaving}
+                className="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition-colors"
+              >
+                Don't Save
+              </button>
+              <button
+                onClick={handleSaveAndExit}
+                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+              >
+                Save Draft
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -18,6 +18,9 @@ interface PlatformVariant {
 
 export function AssetStudioView() {
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+  const [uploadedAssets, setUploadedAssets] = useState<Asset[]>([]);
+  const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
 
   const platformVariants: PlatformVariant[] = [
@@ -29,23 +32,45 @@ export function AssetStudioView() {
   ];
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    const url = URL.createObjectURL(file);
-    const asset: Asset = {
-      id: crypto.randomUUID(),
-      name: file.name,
-      url,
-      type: file.type.startsWith('image/') ? 'image' : 'video',
-      dimensions: { width: 1920, height: 1080 },
-    };
+    const newAssets: Asset[] = files.map(file => {
+      const url = URL.createObjectURL(file);
+      return {
+        id: crypto.randomUUID(),
+        name: file.name,
+        url,
+        type: file.type.startsWith('image/') ? 'image' : 'video',
+        dimensions: { width: 1920, height: 1080 },
+      };
+    });
 
-    setSelectedAsset(asset);
+    setUploadedAssets([...uploadedAssets, ...newAssets]);
+    if (newAssets.length > 0) {
+      setSelectedAsset(newAssets[0]);
+      setSelectedAssetIds([newAssets[0].id]);
+    }
+  };
+
+  const toggleAssetSelection = (assetId: string) => {
+    setSelectedAssetIds(prev =>
+      prev.includes(assetId)
+        ? prev.filter(id => id !== assetId)
+        : [...prev, assetId]
+    );
+  };
+
+  const togglePlatformSelection = (platform: string) => {
+    setSelectedPlatforms(prev =>
+      prev.includes(platform)
+        ? prev.filter(p => p !== platform)
+        : [...prev, platform]
+    );
   };
 
   const handleAutoResize = async () => {
-    if (!selectedAsset) return;
+    if (selectedAssetIds.length === 0 || selectedPlatforms.length === 0) return;
     setIsProcessing(true);
 
     await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -69,6 +94,7 @@ export function AssetStudioView() {
               <input
                 type="file"
                 accept="image/*,video/*"
+                multiple
                 onChange={handleFileUpload}
                 className="hidden"
               />
@@ -86,53 +112,92 @@ export function AssetStudioView() {
             </label>
           </div>
 
-          {selectedAsset && (
-            <div className="bg-white rounded-xl p-6 border border-slate-200">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">Preview</h3>
-              <div className="aspect-video bg-slate-100 rounded-lg overflow-hidden mb-4">
-                {selectedAsset.type === 'image' ? (
-                  <img
-                    src={selectedAsset.url}
-                    alt={selectedAsset.name}
-                    className="w-full h-full object-contain"
-                  />
-                ) : (
-                  <video
-                    src={selectedAsset.url}
-                    controls
-                    className="w-full h-full object-contain"
-                  />
-                )}
+          {uploadedAssets.length > 0 && (
+            <>
+              <div className="bg-white rounded-xl p-6 border border-slate-200">
+                <h3 className="text-lg font-semibold text-slate-900 mb-4">Select Assets</h3>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  {uploadedAssets.map((asset) => (
+                    <div
+                      key={asset.id}
+                      onClick={() => {
+                        toggleAssetSelection(asset.id);
+                        setSelectedAsset(asset);
+                      }}
+                      className={`relative aspect-video bg-slate-100 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${
+                        selectedAssetIds.includes(asset.id)
+                          ? 'border-blue-600 ring-2 ring-blue-200'
+                          : 'border-transparent hover:border-slate-300'
+                      }`}
+                    >
+                      {asset.type === 'image' ? (
+                        <img
+                          src={asset.url}
+                          alt={asset.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <video
+                          src={asset.url}
+                          className="w-full h-full object-cover"
+                        />
+                      )}
+                      {selectedAssetIds.includes(asset.id) && (
+                        <div className="absolute top-2 right-2 bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                          ✓
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <p className="text-sm text-slate-600 mb-4">
+                  {selectedAssetIds.length} asset(s) selected
+                </p>
               </div>
-              <div className="text-sm text-slate-600 mb-4">
-                <p><span className="font-medium">Name:</span> {selectedAsset.name}</p>
-                <p><span className="font-medium">Dimensions:</span> {selectedAsset.dimensions.width}x{selectedAsset.dimensions.height}</p>
+
+              <div className="bg-white rounded-xl p-6 border border-slate-200">
+                <h3 className="text-lg font-semibold text-slate-900 mb-4">Select Target Platforms</h3>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  {['instagram', 'tiktok', 'linkedin', 'twitter'].map((platform) => (
+                    <button
+                      key={platform}
+                      onClick={() => togglePlatformSelection(platform)}
+                      className={`p-3 rounded-lg border-2 transition-all font-medium text-sm ${
+                        selectedPlatforms.includes(platform)
+                          ? 'border-blue-600 bg-blue-50 text-blue-700'
+                          : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                      }`}
+                    >
+                      {platform.charAt(0).toUpperCase() + platform.slice(1)}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={handleAutoResize}
+                  disabled={isProcessing || selectedAssetIds.length === 0 || selectedPlatforms.length === 0}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isProcessing ? (
+                    <>
+                      <Wand2 className="w-5 h-5 animate-spin" />
+                      Generating Variants...
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="w-5 h-5" />
+                      Resize for Selected Platforms
+                    </>
+                  )}
+                </button>
               </div>
-              <button
-                onClick={handleAutoResize}
-                disabled={isProcessing}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {isProcessing ? (
-                  <>
-                    <Wand2 className="w-5 h-5 animate-spin" />
-                    Generating Variants...
-                  </>
-                ) : (
-                  <>
-                    <Wand2 className="w-5 h-5" />
-                    Auto-Resize for All Platforms
-                  </>
-                )}
-              </button>
-            </div>
+            </>
           )}
         </div>
 
         <div className="bg-white rounded-xl p-6 border border-slate-200">
           <h3 className="text-lg font-semibold text-slate-900 mb-4">Platform Variants</h3>
 
-          {!selectedAsset ? (
+          {uploadedAssets.length === 0 ? (
             <div className="text-center py-12">
               <div className="bg-slate-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <ImageIcon className="w-8 h-8 text-slate-400" />

@@ -145,8 +145,19 @@ export function ContentLibrary({ onSelectPost, onCreateNew }: ContentLibraryProp
           posts.map((post) => (
             <div
               key={post.id}
-              onClick={() => onSelectPost?.(post)}
-              draggable
+              onClick={(e) => {
+                if (post.status === 'draft') {
+                  e.stopPropagation();
+                  onSelectPost?.(post);
+                } else {
+                  onSelectPost?.(post);
+                }
+              }}
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                onSelectPost?.(post);
+              }}
+              draggable={post.status !== 'draft'}
               onDragStart={(e) => {
                 e.dataTransfer.setData('postId', post.id);
                 e.dataTransfer.effectAllowed = 'move';

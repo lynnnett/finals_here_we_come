@@ -10,6 +10,8 @@ interface CalendarPost {
   id: string;
   title: string | null;
   caption: string | null;
+  platform_captions?: Record<string, string> | null;
+  selected_platforms?: string[];
   status: 'draft' | 'scheduled' | 'published' | 'failed';
   scheduled_for: string | null;
   platforms: string[];
@@ -32,6 +34,7 @@ export function EnhancedCalendarView() {
   const [dragOverDate, setDragOverDate] = useState<number | null>(null);
   const [selectedPost, setSelectedPost] = useState<CalendarPost | null>(null);
   const [showPostDetail, setShowPostDetail] = useState(false);
+  const [editingDraft, setEditingDraft] = useState<any>(null);
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -62,7 +65,7 @@ export function EnhancedCalendarView() {
     if (!error && data) {
       setPosts(data.map(post => ({
         ...post,
-        platforms: ['instagram', 'twitter'],
+        platforms: post.selected_platforms || ['instagram', 'twitter'],
       })));
     }
   };
@@ -356,6 +359,15 @@ export function EnhancedCalendarView() {
       <div className="w-80 flex-shrink-0">
         <ContentLibrary
           onCreateNew={() => setShowPostComposer(true)}
+          onSelectPost={(post: any) => {
+            if (post.status === 'draft') {
+              setEditingDraft(post);
+              setShowPostComposer(true);
+            } else {
+              setSelectedPost(post as CalendarPost);
+              setShowPostDetail(true);
+            }
+          }}
         />
       </div>
 
@@ -437,8 +449,10 @@ export function EnhancedCalendarView() {
         onClose={() => {
           setShowPostComposer(false);
           setSelectedDate(null);
+          setEditingDraft(null);
         }}
         initialDate={selectedDate || undefined}
+        initialDraft={editingDraft}
         onPostCreated={loadPosts}
       />
 
