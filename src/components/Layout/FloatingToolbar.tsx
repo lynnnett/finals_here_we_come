@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Sparkles, PenTool, Image as ImageIcon, BarChart3, FileText, Zap, Wrench } from 'lucide-react';
+import { X, Sparkles, PenTool, Image as ImageIcon, BarChart3, FileText, Zap, Wrench, Palette } from 'lucide-react';
 
 export function FloatingToolbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -19,6 +19,13 @@ export function FloatingToolbar() {
       icon: PenTool,
       color: 'bg-purple-600',
       description: 'Create captions in seconds'
+    },
+    {
+      id: 'design-studio',
+      label: 'Design Studio',
+      icon: Palette,
+      color: 'bg-indigo-600',
+      description: 'Create visuals with templates & AI'
     },
     {
       id: 'asset-resize',
@@ -141,6 +148,52 @@ export function FloatingToolbar() {
                   <span>TikTok Portrait</span>
                   <span className="text-slate-500">1080x1920</span>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {activeTool === 'design-studio' && (
+            <div className="space-y-4">
+              <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-lg p-4 border border-indigo-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles className="w-5 h-5 text-indigo-600" />
+                  <span className="text-sm font-semibold text-slate-900">AI-Powered Design</span>
+                </div>
+                <p className="text-xs text-slate-600 mb-3">Create professional visuals with templates and AI assistance</p>
+                <button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm">
+                  Open Design Studio
+                </button>
+              </div>
+
+              <div>
+                <div className="text-xs font-semibold text-slate-700 mb-3 uppercase tracking-wider">Quick Templates</div>
+                <div className="space-y-2">
+                  <button className="w-full text-left p-3 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors border border-indigo-200">
+                    <div className="font-medium text-sm text-slate-900 mb-1">Instagram Post</div>
+                    <div className="text-xs text-slate-600">1080 × 1080 square</div>
+                  </button>
+                  <button className="w-full text-left p-3 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors border border-indigo-200">
+                    <div className="font-medium text-sm text-slate-900 mb-1">Story Template</div>
+                    <div className="text-xs text-slate-600">1080 × 1920 portrait</div>
+                  </button>
+                  <button className="w-full text-left p-3 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors border border-indigo-200">
+                    <div className="font-medium text-sm text-slate-900 mb-1">Product Showcase</div>
+                    <div className="text-xs text-slate-600">Multi-platform ready</div>
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-blue-50 to-slate-50 rounded-lg p-4 border border-blue-200">
+                <div className="flex items-start gap-2 mb-2">
+                  <Palette className="w-4 h-4 text-blue-600 mt-0.5" />
+                  <span className="text-xs font-semibold text-slate-900">Features</span>
+                </div>
+                <ul className="space-y-1.5 text-xs text-slate-600">
+                  <li>• 50+ professional templates</li>
+                  <li>• AI design suggestions</li>
+                  <li>• Custom branding tools</li>
+                  <li>• One-click export</li>
+                </ul>
               </div>
             </div>
           )}

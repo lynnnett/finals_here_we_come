@@ -1,4 +1,4 @@
-import { Bell, User, LayoutDashboard, Sparkles, PenTool, Calendar, Image, BarChart3, Settings } from 'lucide-react';
+import { Bell, User, LayoutDashboard, Sparkles, PenTool, Calendar, Image, BarChart3, Settings, Palette } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface HeaderProps {
@@ -14,6 +14,7 @@ export function Header({ activeView, onNavigate }: HeaderProps) {
     { id: 'ai-copilot', label: 'AI Co-Pilot', icon: Sparkles },
     { id: 'caption-generator', label: 'Captions', icon: PenTool },
     { id: 'calendar', label: 'Calendar', icon: Calendar },
+    { id: 'design-studio', label: 'Design', icon: Palette },
     { id: 'asset-studio', label: 'Assets', icon: Image },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'settings', label: 'Settings', icon: Settings },
