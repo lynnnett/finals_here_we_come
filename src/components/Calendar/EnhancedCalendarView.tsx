@@ -63,10 +63,7 @@ export function EnhancedCalendarView() {
       .order('scheduled_for', { ascending: true });
 
     if (!error && data) {
-      setPosts(data.map(post => ({
-        ...post,
-        platforms: post.selected_platforms || ['instagram', 'twitter'],
-      })));
+      setPosts(data);
     }
   };
 
