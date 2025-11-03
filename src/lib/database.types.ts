@@ -91,6 +91,8 @@ export interface Database {
           status: 'draft' | 'scheduled' | 'published' | 'failed'
           scheduled_for: string | null
           published_at: string | null
+          platforms: string[]
+          platform_captions: Json | null
           created_at: string
           updated_at: string
         }
@@ -102,6 +104,8 @@ export interface Database {
           status?: 'draft' | 'scheduled' | 'published' | 'failed'
           scheduled_for?: string | null
           published_at?: string | null
+          platforms?: string[]
+          platform_captions?: Json | null
           created_at?: string
           updated_at?: string
         }
@@ -113,6 +117,8 @@ export interface Database {
           status?: 'draft' | 'scheduled' | 'published' | 'failed'
           scheduled_for?: string | null
           published_at?: string | null
+          platforms?: string[]
+          platform_captions?: Json | null
           created_at?: string
           updated_at?: string
         }
