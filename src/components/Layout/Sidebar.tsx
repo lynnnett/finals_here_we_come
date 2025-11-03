@@ -6,7 +6,8 @@ import {
   Image,
   BarChart3,
   Settings,
-  Sparkles
+  Sparkles,
+  Palette
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -21,6 +22,7 @@ const navItems: NavItem[] = [
   { icon: <MessageSquare className="w-5 h-5" />, label: 'AI Co-Pilot', id: 'ai-copilot' },
   { icon: <PenTool className="w-5 h-5" />, label: 'Caption Generator', id: 'caption-generator' },
   { icon: <Calendar className="w-5 h-5" />, label: 'Content Calendar', id: 'calendar' },
+  { icon: <Palette className="w-5 h-5" />, label: 'Design Studio', id: 'design-studio' },
   { icon: <Image className="w-5 h-5" />, label: 'Asset Studio', id: 'asset-studio' },
   { icon: <BarChart3 className="w-5 h-5" />, label: 'Analytics', id: 'analytics' },
   { icon: <Settings className="w-5 h-5" />, label: 'Settings', id: 'settings' },

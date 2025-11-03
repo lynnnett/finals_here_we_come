@@ -7,6 +7,7 @@ import { DashboardView } from './components/Dashboard/DashboardView';
 import { EnhancedAICoPilotView } from './components/AICoPilot/EnhancedAICoPilotView';
 import { CaptionGeneratorView } from './components/CaptionGenerator/CaptionGeneratorView';
 import { EnhancedCalendarView } from './components/Calendar/EnhancedCalendarView';
+import { DesignStudioView } from './components/DesignStudio/DesignStudioView';
 import { AssetStudioView } from './components/AssetStudio/AssetStudioView';
 import { AnalyticsView } from './components/Analytics/AnalyticsView';
 import { SettingsView } from './components/Settings/SettingsView';
@@ -64,6 +65,8 @@ function AppContent() {
         return <CaptionGeneratorView />;
       case 'calendar':
         return <EnhancedCalendarView />;
+      case 'design-studio':
+        return <DesignStudioView />;
       case 'asset-studio':
         return <AssetStudioView />;
       case 'analytics':
