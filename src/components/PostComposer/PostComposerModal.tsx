@@ -25,7 +25,7 @@ export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, 
   const [topic, setTopic] = useState('');
   const [tone, setTone] = useState('professional');
   const [purpose, setPurpose] = useState('announcement');
-  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['instagram']);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [generatedCaptions, setGeneratedCaptions] = useState<GeneratedCaption[]>([]);
   const [selectedCaption, setSelectedCaption] = useState<string>('');
   const [customCaption, setCustomCaption] = useState('');
@@ -62,7 +62,7 @@ export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, 
         setPostTitle(initialDraft.title || '');
         setTopic(initialDraft.title || '');
         setCustomCaption(initialDraft.caption || '');
-        setSelectedPlatforms(initialDraft.selected_platforms || ['instagram']);
+        setSelectedPlatforms(initialDraft.platforms || []);
         if (initialDraft.platform_captions) {
           setPlatformCaptions(initialDraft.platform_captions);
         }
@@ -97,7 +97,7 @@ export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, 
         title: postTitle || topic,
         caption,
         platform_captions: platformCaptionsData,
-        selected_platforms: selectedPlatforms,
+        platforms: selectedPlatforms,
         status: 'draft',
         updated_at: new Date().toISOString(),
       });
@@ -197,6 +197,11 @@ export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, 
   const handleCreatePost = async () => {
     if (!user) return;
 
+    if (selectedPlatforms.length === 0) {
+      alert('Please select at least one platform before scheduling your post.');
+      return;
+    }
+
     setIsSaving(true);
     try {
       const caption = customCaption || selectedCaption;
@@ -206,18 +211,20 @@ export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, 
 
       const platformCaptionsData = Object.keys(platformCaptions).length > 0 ? platformCaptions : null;
 
+      const postData = {
+        user_id: user.id,
+        title: postTitle || topic,
+        caption,
+        platform_captions: platformCaptionsData,
+        platforms: selectedPlatforms,
+        status: scheduleType === 'now' ? 'published' : 'scheduled',
+        scheduled_for: scheduledFor?.toISOString(),
+        published_at: scheduleType === 'now' ? new Date().toISOString() : null,
+      };
+
       const { data: post, error: postError } = await supabase
         .from('posts')
-        .insert({
-          user_id: user.id,
-          title: postTitle || topic,
-          caption,
-          platform_captions: platformCaptionsData,
-          selected_platforms: selectedPlatforms,
-          status: scheduleType === 'now' ? 'published' : 'scheduled',
-          scheduled_for: scheduledFor?.toISOString(),
-          published_at: scheduleType === 'now' ? new Date().toISOString() : null,
-        })
+        .insert(postData)
         .select()
         .single();
 
@@ -228,6 +235,7 @@ export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, 
       resetForm();
     } catch (error) {
       console.error('Error creating post:', error);
+      alert('Failed to create post. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -243,7 +251,7 @@ export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, 
     setUploadedAssets([]);
     setAssetPreviews([]);
     setPostTitle('');
-    setSelectedPlatforms(['instagram']);
+    setSelectedPlatforms([]);
   };
 
   if (!isOpen) return null;
@@ -367,7 +375,14 @@ export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, 
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-3">Target Platforms</label>
+                <label className="block text-sm font-medium text-slate-700 mb-3">
+                  Target Platforms <span className="text-red-600">*</span>
+                </label>
+                {selectedPlatforms.length === 0 && (
+                  <p className="text-sm text-red-600 mb-2">
+                    Please select at least one platform
+                  </p>
+                )}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {platformOptions.map(platform => (
                     <button
@@ -591,14 +606,63 @@ export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, 
                     <span className="text-slate-600">Title:</span>
                     <span className="font-medium text-slate-900">{postTitle || topic}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-600">Platforms:</span>
-                    <span className="font-medium text-slate-900">{selectedPlatforms.length}</span>
+                  <div>
+                    <div className="flex justify-between mb-2">
+                      <span className="text-slate-600">Platforms:</span>
+                      <span className="font-medium text-slate-900">{selectedPlatforms.length} selected</span>
+                    </div>
+                    {selectedPlatforms.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {selectedPlatforms.map(platform => {
+                          const platformOption = platformOptions.find(p => p.value === platform);
+                          return (
+                            <span
+                              key={platform}
+                              className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-md font-medium"
+                            >
+                              {platformOption?.icon} {platformOption?.label}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <span className="text-red-600 text-xs">No platforms selected</span>
+                    )}
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-600">Assets:</span>
                     <span className="font-medium text-slate-900">{uploadedAssets.length}</span>
                   </div>
+                  {scheduleType === 'later' && scheduledDate && (
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-slate-600">Scheduled for:</span>
+                      </div>
+                      <div className="text-slate-900 font-medium">
+                        {selectedPlatforms.length > 0 ? (
+                          <>
+                            {selectedPlatforms.map(platform => {
+                              const platformOption = platformOptions.find(p => p.value === platform);
+                              return platformOption?.label;
+                            }).join(', ')} on{' '}
+                            {scheduledDate.toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })} at {scheduledTime}
+                          </>
+                        ) : (
+                          <>
+                            {scheduledDate.toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })} at {scheduledTime}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-slate-600">Status:</span>
                     <span className="font-medium text-slate-900">
@@ -623,8 +687,9 @@ export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, 
           <button
             onClick={() => step < 3 ? setStep(step + 1) : handleCreatePost()}
             disabled={
-              (step === 1 && !selectedCaption && !customCaption) ||
-              (step === 3 && isSaving)
+              (step === 1 && (!selectedCaption && !customCaption)) ||
+              (step === 1 && selectedPlatforms.length === 0) ||
+              (step === 3 && (isSaving || selectedPlatforms.length === 0))
             }
             className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
