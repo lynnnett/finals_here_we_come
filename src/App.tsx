@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import { LoginForm } from './components/Auth/LoginForm';
 import { MainLayout } from './components/Layout/MainLayout';
 import { Sidebar } from './components/Layout/Sidebar';
@@ -99,7 +100,9 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <NotificationProvider>
+        <AppContent />
+      </NotificationProvider>
     </AuthProvider>
   );
 }
