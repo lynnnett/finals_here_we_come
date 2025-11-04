@@ -1,9 +1,19 @@
 import { useState } from 'react';
-import { X, Sparkles, PenTool, Image as ImageIcon, BarChart3, FileText, Zap, Wrench, Palette } from 'lucide-react';
+import { X, Sparkles, PenTool, Image as ImageIcon, BarChart3, FileText, Zap, Wrench, Palette, Check, Download } from 'lucide-react';
+
+interface ResizedAsset {
+  platform: string;
+  width: number;
+  height: number;
+  preview: string;
+}
 
 export function FloatingToolbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTool, setActiveTool] = useState<string | null>(null);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['instagram', 'twitter', 'facebook']);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [resizedAssets, setResizedAssets] = useState<ResizedAsset[]>([]);
 
   const tools = [
     {
@@ -57,12 +67,61 @@ export function FloatingToolbar() {
     },
   ];
 
+  const platformSizes = [
+    { id: 'instagram', name: 'Instagram Post', width: 1080, height: 1080, icon: '📷' },
+    { id: 'instagram-story', name: 'Instagram Story', width: 1080, height: 1920, icon: '📱' },
+    { id: 'twitter', name: 'Twitter Post', width: 1200, height: 675, icon: '🐦' },
+    { id: 'facebook', name: 'Facebook Post', width: 1200, height: 630, icon: '👍' },
+    { id: 'linkedin', name: 'LinkedIn Post', width: 1200, height: 627, icon: '💼' },
+    { id: 'tiktok', name: 'TikTok Video', width: 1080, height: 1920, icon: '🎵' },
+    { id: 'youtube', name: 'YouTube Thumbnail', width: 1280, height: 720, icon: '▶️' },
+    { id: 'pinterest', name: 'Pinterest Pin', width: 1000, height: 1500, icon: '📌' },
+  ];
+
   const handleToolClick = (toolId: string) => {
     if (activeTool === toolId) {
       setActiveTool(null);
     } else {
       setActiveTool(toolId);
     }
+  };
+
+  const togglePlatform = (platformId: string) => {
+    setSelectedPlatforms(prev =>
+      prev.includes(platformId)
+        ? prev.filter(p => p !== platformId)
+        : [...prev, platformId]
+    );
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setUploadedImage(e.target?.result as string);
+        setResizedAssets([]);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleResize = () => {
+    if (!uploadedImage) return;
+
+    const assets: ResizedAsset[] = selectedPlatforms.map(platformId => {
+      const platform = platformSizes.find(p => p.id === platformId);
+      if (!platform) return null;
+
+      return {
+        platform: platform.name,
+        width: platform.width,
+        height: platform.height,
+        preview: uploadedImage,
+      };
+    }).filter(Boolean) as ResizedAsset[];
+
+    setResizedAssets(assets);
   };
 
   const renderToolContent = () => {
@@ -131,24 +190,119 @@ export function FloatingToolbar() {
 
           {activeTool === 'asset-resize' && (
             <div className="space-y-4">
-              <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:border-green-500 hover:bg-green-50 transition-all cursor-pointer">
-                <ImageIcon className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                <p className="text-sm font-medium text-slate-900">Upload Asset</p>
-                <p className="text-xs text-slate-600 mt-1">PNG, JPG, MP4</p>
+              <label className="block border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:border-green-500 hover:bg-green-50 transition-all cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+                {uploadedImage ? (
+                  <div className="space-y-2">
+                    <img src={uploadedImage} alt="Uploaded" className="w-24 h-24 object-cover mx-auto rounded-lg" />
+                    <p className="text-sm font-medium text-green-700">Image uploaded!</p>
+                    <p className="text-xs text-slate-600">Click to change</p>
+                  </div>
+                ) : (
+                  <>
+                    <ImageIcon className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                    <p className="text-sm font-medium text-slate-900">Upload Asset</p>
+                    <p className="text-xs text-slate-600 mt-1">PNG, JPG</p>
+                  </>
+                )}
+              </label>
+
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                    Select Platforms
+                  </label>
+                  <span className="text-xs text-slate-500">
+                    {selectedPlatforms.length} selected
+                  </span>
+                </div>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {platformSizes.map((platform) => (
+                    <button
+                      key={platform.id}
+                      onClick={() => togglePlatform(platform.id)}
+                      className={`w-full flex items-center justify-between p-3 rounded-lg transition-all border ${
+                        selectedPlatforms.includes(platform.id)
+                          ? 'bg-green-50 border-green-500 shadow-sm'
+                          : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-lg ${
+                          selectedPlatforms.includes(platform.id)
+                            ? 'bg-green-100'
+                            : 'bg-slate-100'
+                        }`}>
+                          {platform.icon}
+                        </div>
+                        <div className="text-left">
+                          <p className="text-sm font-medium text-slate-900">{platform.name}</p>
+                          <p className="text-xs text-slate-600">{platform.width} × {platform.height}</p>
+                        </div>
+                      </div>
+                      {selectedPlatforms.includes(platform.id) && (
+                        <div className="w-5 h-5 bg-green-600 rounded-full flex items-center justify-center">
+                          <Check className="w-3 h-3 text-white" />
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <button className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-lg transition-colors">
-                Auto-Resize for All Platforms
+
+              <button
+                onClick={handleResize}
+                disabled={!uploadedImage || selectedPlatforms.length === 0}
+                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-colors"
+              >
+                Resize for {selectedPlatforms.length} Platform{selectedPlatforms.length !== 1 ? 's' : ''}
               </button>
-              <div className="space-y-2 mt-4">
-                <div className="flex justify-between items-center p-2 bg-slate-50 rounded text-xs">
-                  <span>Instagram Square</span>
-                  <span className="text-slate-500">1080x1080</span>
+
+              {resizedAssets.length > 0 && (
+                <div className="space-y-3 pt-4 border-t border-slate-200">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold text-slate-900">Resized Assets</h4>
+                    <span className="text-xs text-green-600 font-medium">{resizedAssets.length} ready</span>
+                  </div>
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {resizedAssets.map((asset, index) => (
+                      <div key={index} className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-lg p-3">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="flex-shrink-0 w-16 h-16 bg-white rounded-lg overflow-hidden border border-green-200 shadow-sm">
+                            <img
+                              src={asset.preview}
+                              alt={asset.platform}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-slate-900 truncate">{asset.platform}</p>
+                            <p className="text-xs text-slate-600">{asset.width} × {asset.height}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded">
+                                <Check className="w-3 h-3" />
+                                Ready
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <button className="w-full flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-green-300 text-green-700 font-medium py-2 px-3 rounded-lg transition-colors text-xs">
+                          <Download className="w-3.5 h-3.5" />
+                          Download {asset.platform}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <button className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-lg transition-colors text-sm">
+                    Download All ({resizedAssets.length})
+                  </button>
                 </div>
-                <div className="flex justify-between items-center p-2 bg-slate-50 rounded text-xs">
-                  <span>TikTok Portrait</span>
-                  <span className="text-slate-500">1080x1920</span>
-                </div>
-              </div>
+              )}
             </div>
           )}
 
