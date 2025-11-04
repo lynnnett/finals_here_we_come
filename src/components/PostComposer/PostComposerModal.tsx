@@ -206,7 +206,12 @@ export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, 
     try {
       const caption = customCaption || selectedCaption;
       const scheduledFor = scheduleType === 'later'
-        ? new Date(`${scheduledDate.toISOString().split('T')[0]}T${scheduledTime}`)
+        ? (() => {
+            const [hours, minutes] = scheduledTime.split(':').map(Number);
+            const date = new Date(scheduledDate);
+            date.setHours(hours, minutes, 0, 0);
+            return date;
+          })()
         : null;
 
       const platformCaptionsData = Object.keys(platformCaptions).length > 0 ? platformCaptions : null;
@@ -573,12 +578,17 @@ export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, 
                     <label className="block text-sm font-medium text-slate-700 mb-2">Date</label>
                     <input
                       type="date"
-                      value={scheduledDate.toISOString().split('T')[0]}
+                      value={`${scheduledDate.getFullYear()}-${String(scheduledDate.getMonth() + 1).padStart(2, '0')}-${String(scheduledDate.getDate()).padStart(2, '0')}`}
                       onChange={(e) => {
                         const newDate = e.target.value;
                         if (newDate) {
                           try {
-                            setScheduledDate(new Date(newDate + 'T00:00:00'));
+                            const [year, month, day] = newDate.split('-').map(Number);
+                            const updatedDate = new Date(scheduledDate);
+                            updatedDate.setFullYear(year);
+                            updatedDate.setMonth(month - 1);
+                            updatedDate.setDate(day);
+                            setScheduledDate(updatedDate);
                           } catch (error) {
                             console.error('Invalid date:', error);
                           }
