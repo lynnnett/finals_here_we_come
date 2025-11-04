@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Sparkles, Layout, Image, Type, Palette, Download, Wand2, Grid3x3, Search, Filter } from 'lucide-react';
-import { InteractiveDesignCanvas } from './InteractiveDesignCanvas';
+import { EnhancedInteractiveCanvas } from './EnhancedInteractiveCanvas';
 import { useNotifications } from '../../contexts/NotificationContext';
 
 interface Template {
@@ -256,7 +256,7 @@ export function DesignStudioView() {
       )}
 
       {activeTab === 'design' && selectedTemplate && (
-        <InteractiveDesignCanvas template={selectedTemplate} onExport={handleExport} />
+        <EnhancedInteractiveCanvas template={selectedTemplate} onExport={handleExport} />
       )}
     </div>
   );
