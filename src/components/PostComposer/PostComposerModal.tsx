@@ -72,9 +72,20 @@ export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, 
           setScheduledDate(new Date(initialDraft.scheduled_for));
           setScheduleType('later');
         }
+        if (initialDraft.schedule) {
+          setScheduleType('later');
+          if (initialDate) {
+            setScheduledDate(initialDate);
+          }
+        }
+        if (initialDraft.platforms && initialDraft.platforms.length === 0 && initialDraft.caption) {
+          setStep(1);
+        } else if (initialDraft.caption) {
+          setStep(2);
+        }
       }
     }
-  }, [isOpen, initialDraft]);
+  }, [isOpen, initialDraft, initialDate]);
 
   const triggerAutoSave = () => {
     if (autoSaveTimeout) clearTimeout(autoSaveTimeout);

@@ -14,12 +14,15 @@ import { AnalyticsView } from './components/Analytics/AnalyticsView';
 import { SettingsView } from './components/Settings/SettingsView';
 import { OnboardingModal } from './components/Onboarding/OnboardingModal';
 import { FloatingToolbar } from './components/Layout/FloatingToolbar';
+import { PostComposerModal } from './components/PostComposer/PostComposerModal';
 import { supabase } from './lib/supabase';
 
 function AppContent() {
   const { user, loading } = useAuth();
   const [activeView, setActiveView] = useState('dashboard');
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showPostComposer, setShowPostComposer] = useState(false);
+  const [postComposerData, setPostComposerData] = useState<any>(null);
 
   useEffect(() => {
     if (user) {
@@ -39,6 +42,11 @@ function AppContent() {
     if (data && !data.onboarding_completed) {
       setShowOnboarding(true);
     }
+  };
+
+  const handleCreatePostFromAI = (data: any) => {
+    setPostComposerData(data);
+    setShowPostComposer(true);
   };
 
   if (loading) {
@@ -61,7 +69,7 @@ function AppContent() {
       case 'dashboard':
         return <DashboardView />;
       case 'ai-copilot':
-        return <EnhancedAICoPilotView />;
+        return <EnhancedAICoPilotView onCreatePost={handleCreatePostFromAI} />;
       case 'caption-generator':
         return <CaptionGeneratorView />;
       case 'calendar':
@@ -92,6 +100,22 @@ function AppContent() {
       <OnboardingModal
         isOpen={showOnboarding}
         onClose={() => setShowOnboarding(false)}
+      />
+
+      <PostComposerModal
+        isOpen={showPostComposer}
+        onClose={() => {
+          setShowPostComposer(false);
+          setPostComposerData(null);
+        }}
+        initialDraft={postComposerData}
+        onPostCreated={() => {
+          setShowPostComposer(false);
+          setPostComposerData(null);
+          if (activeView !== 'calendar') {
+            setActiveView('calendar');
+          }
+        }}
       />
     </>
   );
