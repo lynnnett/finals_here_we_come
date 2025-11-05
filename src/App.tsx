@@ -8,12 +8,13 @@ import { DashboardView } from './components/Dashboard/DashboardView';
 import { EnhancedAICoPilotView } from './components/AICoPilot/EnhancedAICoPilotView';
 import { CaptionGeneratorView } from './components/CaptionGenerator/CaptionGeneratorView';
 import { EnhancedCalendarView } from './components/Calendar/EnhancedCalendarView';
-import { DesignStudioView } from './components/DesignStudio/DesignStudioView';
+import { ComprehensiveDesignStudio } from './components/DesignStudio/ComprehensiveDesignStudio';
 import { AssetStudioView } from './components/AssetStudio/AssetStudioView';
 import { AnalyticsView } from './components/Analytics/AnalyticsView';
 import { SettingsView } from './components/Settings/SettingsView';
 import { OnboardingModal } from './components/Onboarding/OnboardingModal';
 import { FloatingToolbar } from './components/Layout/FloatingToolbar';
+import { AccessibilityToolbar } from './components/Layout/AccessibilityToolbar';
 import { PostComposerModal } from './components/PostComposer/PostComposerModal';
 import { supabase } from './lib/supabase';
 
@@ -75,7 +76,7 @@ function AppContent() {
       case 'calendar':
         return <EnhancedCalendarView />;
       case 'design-studio':
-        return <DesignStudioView />;
+        return <ComprehensiveDesignStudio />;
       case 'asset-studio':
         return <AssetStudioView />;
       case 'analytics':
@@ -96,6 +97,7 @@ function AppContent() {
       </div>
 
       <FloatingToolbar />
+      <AccessibilityToolbar />
 
       <OnboardingModal
         isOpen={showOnboarding}
