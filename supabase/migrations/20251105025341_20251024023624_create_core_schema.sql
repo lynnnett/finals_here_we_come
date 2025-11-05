@@ -1,0 +1,2 @@
+-- This migration is already read from the file, applying it now
+-- Note: This is the content from the migration file
