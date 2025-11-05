@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { X, ArrowRight, ArrowLeft, Sparkles, Upload, Wand2, Calendar as CalendarIcon, Send, Save } from 'lucide-react';
+import { X, ArrowRight, ArrowLeft, Sparkles, Upload, Wand2, Calendar as CalendarIcon, Send, Save, Image as ImageIcon } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { supabase } from '../../lib/supabase';
+import { uploadAsset, getRecommendedDimensions, type UploadedAsset } from '../../lib/assetUpload';
 
 interface PostComposerModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ interface GeneratedCaption {
   platform: string;
   caption: string;
   hashtags: string[];
+  suggestedEmojis?: string[];
 }
 
 export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, onPostCreated }: PostComposerModalProps) {
@@ -32,10 +34,11 @@ export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, 
   const [selectedCaption, setSelectedCaption] = useState<string>('');
   const [customCaption, setCustomCaption] = useState('');
   const [platformCaptions, setPlatformCaptions] = useState<Record<string, string>>({});
+  const [isGeneratingCaptions, setIsGeneratingCaptions] = useState(false);
 
-  const [uploadedAssets, setUploadedAssets] = useState<File[]>([]);
-  const [assetPreviews, setAssetPreviews] = useState<string[]>([]);
+  const [uploadedAssets, setUploadedAssets] = useState<UploadedAsset[]>([]);
   const [generatingVariants, setGeneratingVariants] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const [scheduleType, setScheduleType] = useState<'now' | 'later'>('later');
   const [scheduledDate, setScheduledDate] = useState(initialDate || new Date());
@@ -172,6 +175,7 @@ export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, 
   const generateCaptions = async () => {
     if (!topic.trim()) return;
 
+    setIsGeneratingCaptions(true);
     try {
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-caption`,
@@ -200,23 +204,88 @@ export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, 
         });
         setPlatformCaptions(captionsMap);
       }
+
+      addNotification({
+        type: 'success',
+        title: 'Captions Generated',
+        message: 'AI has created custom captions for your selected platforms',
+        duration: 3000,
+      });
     } catch (error) {
       console.error('Error generating captions:', error);
+      addNotification({
+        type: 'error',
+        title: 'Generation Failed',
+        message: 'Could not generate captions. Please try again.',
+        duration: 4000,
+      });
+    } finally {
+      setIsGeneratingCaptions(false);
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    setUploadedAssets(files);
+    if (!user) return;
 
-    const previews = files.map(file => URL.createObjectURL(file));
-    setAssetPreviews(previews);
+    setIsUploading(true);
+    try {
+      const uploadPromises = files.map(file => uploadAsset(file, user.id));
+      const results = await Promise.all(uploadPromises);
+      const successfulUploads = results.filter((result): result is UploadedAsset => result !== null);
+
+      setUploadedAssets(prev => [...prev, ...successfulUploads]);
+
+      addNotification({
+        type: 'success',
+        title: 'Assets Uploaded',
+        message: `${successfulUploads.length} file(s) uploaded successfully`,
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Upload error:', error);
+      addNotification({
+        type: 'error',
+        title: 'Upload Failed',
+        message: 'Could not upload some files. Please try again.',
+        duration: 4000,
+      });
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleAutoResize = async () => {
+    if (uploadedAssets.length === 0) return;
+
     setGeneratingVariants(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setGeneratingVariants(false);
+    try {
+      addNotification({
+        type: 'info',
+        title: 'Generating Variants',
+        message: `Creating optimized versions for ${selectedPlatforms.length} platform(s)`,
+        duration: 3000,
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      addNotification({
+        type: 'success',
+        title: 'Variants Generated',
+        message: 'Platform-optimized versions are ready',
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Variant generation error:', error);
+      addNotification({
+        type: 'error',
+        title: 'Generation Failed',
+        message: 'Could not generate variants. Please try again.',
+        duration: 4000,
+      });
+    } finally {
+      setGeneratingVariants(false);
+    }
   };
 
   const handleCreatePost = async () => {
@@ -252,7 +321,7 @@ export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, 
         published_at: scheduleType === 'now' ? new Date().toISOString() : null,
       };
 
-      const { data: post, error: postError } = await supabase
+      const { error: postError } = await supabase
         .from('posts')
         .insert(postData)
         .select()
@@ -293,7 +362,6 @@ export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, 
     setGeneratedCaptions([]);
     setPlatformCaptions({});
     setUploadedAssets([]);
-    setAssetPreviews([]);
     setPostTitle('');
     setSelectedPlatforms([]);
   };
@@ -447,16 +515,26 @@ export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, 
 
               <button
                 onClick={generateCaptions}
-                disabled={!topic.trim() || selectedPlatforms.length === 0}
+                disabled={!topic.trim() || selectedPlatforms.length === 0 || isGeneratingCaptions}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                <Sparkles className="w-5 h-5" />
-                Generate AI Captions
+                <Sparkles className={`w-5 h-5 ${isGeneratingCaptions ? 'animate-spin' : ''}`} />
+                {isGeneratingCaptions ? 'Generating...' : 'Generate AI Captions'}
               </button>
 
               {generatedCaptions.length > 0 && (
                 <div className="space-y-4">
-                  <h4 className="font-semibold text-slate-900">Generated Captions</h4>
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold text-slate-900">Generated Captions</h4>
+                    <button
+                      onClick={generateCaptions}
+                      disabled={isGeneratingCaptions}
+                      className="px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      <Sparkles className={`w-4 h-4 ${isGeneratingCaptions ? 'animate-spin' : ''}`} />
+                      Regenerate
+                    </button>
+                  </div>
                   {generatedCaptions.map((item, index) => (
                     <div
                       key={index}
@@ -471,12 +549,34 @@ export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, 
                         <span className="font-medium capitalize">{item.platform}</span>
                       </div>
                       <p className="text-slate-700 mb-3">{item.caption}</p>
-                      <div className="flex flex-wrap gap-2">
-                        {item.hashtags.map((tag, i) => (
-                          <span key={i} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">
-                            {tag}
-                          </span>
-                        ))}
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap gap-2">
+                          {item.hashtags.map((tag, i) => (
+                            <span key={i} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                        {item.suggestedEmojis && item.suggestedEmojis.length > 0 && (
+                          <div>
+                            <p className="text-xs font-medium text-slate-600 mb-1.5">Suggested Emojis:</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {item.suggestedEmojis.map((emoji, i) => (
+                                <button
+                                  key={i}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setCustomCaption((prev) => (prev || selectedCaption) + emoji);
+                                  }}
+                                  className="px-2 py-1 bg-white border border-slate-200 hover:border-blue-300 hover:bg-blue-50 rounded text-lg transition-colors"
+                                  title="Click to add to caption"
+                                >
+                                  {emoji}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -524,12 +624,33 @@ export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, 
                 </label>
               </div>
 
-              {assetPreviews.length > 0 && (
+              {isUploading && (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <span className="ml-3 text-slate-600">Uploading assets...</span>
+                </div>
+              )}
+
+              {uploadedAssets.length > 0 && (
                 <>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {assetPreviews.map((preview, index) => (
-                      <div key={index} className="aspect-square rounded-lg overflow-hidden bg-slate-100">
-                        <img src={preview} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
+                    {uploadedAssets.map((asset, index) => (
+                      <div key={asset.id} className="relative aspect-square rounded-lg overflow-hidden bg-slate-100 group">
+                        {asset.type === 'image' ? (
+                          <img src={asset.url} alt={`Asset ${index + 1}`} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <ImageIcon className="w-12 h-12 text-slate-400" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center">
+                          <button
+                            onClick={() => setUploadedAssets(prev => prev.filter(a => a.id !== asset.id))}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity bg-red-600 text-white px-3 py-1 rounded-lg text-sm font-medium"
+                          >
+                            Remove
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -552,26 +673,52 @@ export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, 
                     )}
                   </button>
 
-                  <div className="bg-gradient-to-br from-blue-50 to-slate-50 rounded-lg p-6 border border-blue-100">
-                    <h4 className="font-semibold text-slate-900 mb-2">AI Design Assistant</h4>
-                    <p className="text-sm text-slate-600 mb-4">
-                      Based on your caption, we recommend:
-                    </p>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-blue-600 rounded-full" />
-                        <span className="text-slate-700">Modern gradient backgrounds</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-blue-600 rounded-full" />
-                        <span className="text-slate-700">Bold sans-serif typography</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-blue-600 rounded-full" />
-                        <span className="text-slate-700">Celebration-themed stickers</span>
+                  {selectedPlatforms.length > 0 && (
+                    <div className="bg-gradient-to-br from-blue-50 to-slate-50 rounded-lg p-6 border border-blue-100">
+                      <h4 className="font-semibold text-slate-900 mb-2">Recommended Dimensions</h4>
+                      <p className="text-sm text-slate-600 mb-4">
+                        Optimal sizes for your selected platforms:
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        {selectedPlatforms.includes('instagram') && (
+                          <div className="bg-white rounded-lg p-3 border border-slate-200">
+                            <div className="font-medium text-slate-900 mb-1">Instagram</div>
+                            <div className="text-slate-600 text-xs space-y-0.5">
+                              <div>Square: 1080x1080</div>
+                              <div>Portrait: 1080x1350</div>
+                              <div>Story: 1080x1920</div>
+                            </div>
+                          </div>
+                        )}
+                        {selectedPlatforms.includes('tiktok') && (
+                          <div className="bg-white rounded-lg p-3 border border-slate-200">
+                            <div className="font-medium text-slate-900 mb-1">TikTok</div>
+                            <div className="text-slate-600 text-xs">
+                              <div>Portrait: 1080x1920</div>
+                            </div>
+                          </div>
+                        )}
+                        {selectedPlatforms.includes('linkedin') && (
+                          <div className="bg-white rounded-lg p-3 border border-slate-200">
+                            <div className="font-medium text-slate-900 mb-1">LinkedIn</div>
+                            <div className="text-slate-600 text-xs space-y-0.5">
+                              <div>Landscape: 1200x627</div>
+                              <div>Square: 1200x1200</div>
+                            </div>
+                          </div>
+                        )}
+                        {selectedPlatforms.includes('twitter') && (
+                          <div className="bg-white rounded-lg p-3 border border-slate-200">
+                            <div className="font-medium text-slate-900 mb-1">X (Twitter)</div>
+                            <div className="text-slate-600 text-xs space-y-0.5">
+                              <div>Landscape: 1200x675</div>
+                              <div>Square: 1200x1200</div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
+                  )}
                 </>
               )}
             </div>
