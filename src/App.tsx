@@ -4,15 +4,13 @@ import { LoginForm } from './components/Auth/LoginForm';
 import { MainLayout } from './components/Layout/MainLayout';
 import { Sidebar } from './components/Layout/Sidebar';
 import { DashboardView } from './components/Dashboard/DashboardView';
-import { EnhancedAICoPilotView } from './components/AICoPilot/EnhancedAICoPilotView';
+import { AICoPilotView } from './components/AICoPilot/AICoPilotView';
 import { CaptionGeneratorView } from './components/CaptionGenerator/CaptionGeneratorView';
-import { EnhancedCalendarView } from './components/Calendar/EnhancedCalendarView';
-import { DesignStudioView } from './components/DesignStudio/DesignStudioView';
+import { CalendarView } from './components/Calendar/CalendarView';
 import { AssetStudioView } from './components/AssetStudio/AssetStudioView';
 import { AnalyticsView } from './components/Analytics/AnalyticsView';
 import { SettingsView } from './components/Settings/SettingsView';
 import { OnboardingModal } from './components/Onboarding/OnboardingModal';
-import { FloatingToolbar } from './components/Layout/FloatingToolbar';
 import { supabase } from './lib/supabase';
 
 function AppContent() {
@@ -60,13 +58,11 @@ function AppContent() {
       case 'dashboard':
         return <DashboardView />;
       case 'ai-copilot':
-        return <EnhancedAICoPilotView />;
+        return <AICoPilotView />;
       case 'caption-generator':
         return <CaptionGeneratorView />;
       case 'calendar':
-        return <EnhancedCalendarView />;
-      case 'design-studio':
-        return <DesignStudioView />;
+        return <CalendarView />;
       case 'asset-studio':
         return <AssetStudioView />;
       case 'analytics':
@@ -80,14 +76,12 @@ function AppContent() {
 
   return (
     <>
-      <div className="min-h-screen bg-slate-50">
-        <MainLayout activeView={activeView} onNavigate={setActiveView}>
-          {renderView()}
-        </MainLayout>
+      <div className="min-h-screen bg-slate-50 flex">
+        <Sidebar activeView={activeView} onNavigate={setActiveView} />
+        <div className="flex-1 flex flex-col ml-64">
+          <MainLayout>{renderView()}</MainLayout>
+        </div>
       </div>
-
-      <FloatingToolbar />
-
       <OnboardingModal
         isOpen={showOnboarding}
         onClose={() => setShowOnboarding(false)}
