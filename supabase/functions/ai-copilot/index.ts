@@ -7,8 +7,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -19,6 +17,9 @@ Deno.serve(async (req: Request) => {
 
   try {
     const { message, conversationId, context } = await req.json();
+
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    console.log("OpenAI API Key status:", OPENAI_API_KEY ? "Found" : "Not found");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -108,9 +109,10 @@ Remember: Your goal is to be HELPFUL and RELEVANT. Give the user exactly what th
     ];
 
     if (!OPENAI_API_KEY) {
+      console.log("Using fallback response - OpenAI API key not configured");
       const fallbackResponse = generateIntelligentFallback(message, context);
       return new Response(
-        JSON.stringify({ response: fallbackResponse }),
+        JSON.stringify({ response: fallbackResponse, usingFallback: true }),
         {
           headers: {
             ...corsHeaders,
@@ -120,6 +122,7 @@ Remember: Your goal is to be HELPFUL and RELEVANT. Give the user exactly what th
       );
     }
 
+    console.log("Calling OpenAI API...");
     const openaiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -138,11 +141,14 @@ Remember: Your goal is to be HELPFUL and RELEVANT. Give the user exactly what th
     });
 
     if (!openaiResponse.ok) {
-      throw new Error(`OpenAI API error: ${openaiResponse.statusText}`);
+      const errorText = await openaiResponse.text();
+      console.error("OpenAI API error:", openaiResponse.status, errorText);
+      throw new Error(`OpenAI API error: ${openaiResponse.status} - ${errorText}`);
     }
 
     const data = await openaiResponse.json();
     const aiResponse = data.choices[0].message.content;
+    console.log("OpenAI response received successfully");
 
     return new Response(
       JSON.stringify({ response: aiResponse }),
@@ -154,7 +160,7 @@ Remember: Your goal is to be HELPFUL and RELEVANT. Give the user exactly what th
       }
     );
   } catch (error) {
-    console.error("Error:", error);
+    console.error("Error in edge function:", error);
 
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     const fallbackResponse = "I apologize, but I'm having trouble processing your request right now. Please try again in a moment, or rephrase your question.";
