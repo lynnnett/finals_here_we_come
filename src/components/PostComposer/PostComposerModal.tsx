@@ -112,9 +112,12 @@ export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, 
         user_id: user.id,
         title: postTitle || topic,
         caption,
+        content: caption,
         platform_captions: platformCaptionsData,
         platforms: selectedPlatforms,
         status: 'draft',
+        media_url: uploadedAssets[0]?.url || null,
+        last_autosave: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
       setLastSaved(new Date());
@@ -314,11 +317,13 @@ export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, 
         user_id: user.id,
         title: postTitle || topic,
         caption,
+        content: caption,
         platform_captions: platformCaptionsData,
         platforms: selectedPlatforms,
         status: scheduleType === 'now' ? 'published' : 'scheduled',
         scheduled_for: scheduledFor?.toISOString(),
         published_at: scheduleType === 'now' ? new Date().toISOString() : null,
+        media_url: uploadedAssets[0]?.url || null,
       };
 
       const { error: postError } = await supabase
