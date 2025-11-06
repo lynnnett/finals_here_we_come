@@ -77,11 +77,10 @@ function AppContent() {
 
   return (
     <>
-      <div className="min-h-screen bg-slate-50 flex">
-        <Sidebar activeView={activeView} onNavigate={setActiveView} />
-        <div className="flex-1 flex flex-col ml-64">
-          <MainLayout>{renderView()}</MainLayout>
-        </div>
+      <div className="min-h-screen bg-slate-50">
+        <MainLayout activeView={activeView} onNavigate={setActiveView}>
+          {renderView()}
+        </MainLayout>
       </div>
 
       <FloatingToolbar />

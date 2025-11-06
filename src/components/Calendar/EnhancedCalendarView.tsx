@@ -112,7 +112,21 @@ export function EnhancedCalendarView() {
         postDate.getMonth() === currentDate.getMonth() &&
         postDate.getFullYear() === currentDate.getFullYear()
       );
+    }).sort((a, b) => {
+      const timeA = new Date(a.scheduled_for!).getTime();
+      const timeB = new Date(b.scheduled_for!).getTime();
+      return timeA - timeB;
     });
+  };
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    const displayMinutes = minutes.toString().padStart(2, '0');
+    return `${displayHours}:${displayMinutes} ${ampm}`;
   };
 
   const getEventsForDate = (day: number) => {
@@ -234,7 +248,7 @@ export function EnhancedCalendarView() {
             </button>
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             {dayEvents.map((event) => (
               <div
                 key={event.id}
@@ -252,22 +266,60 @@ export function EnhancedCalendarView() {
                   e.dataTransfer.setData('postId', post.id);
                   e.dataTransfer.effectAllowed = 'move';
                 }}
-                className={`text-xs p-2 rounded cursor-move ${
+                className={`text-xs p-2 rounded cursor-move transition-all hover:shadow-sm group ${
                   post.status === 'scheduled'
-                    ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                    ? 'bg-blue-50 border-l-4 border-l-blue-500 border border-blue-200 hover:bg-blue-100'
                     : post.status === 'published'
-                    ? 'bg-green-50 text-green-700 border border-green-200'
+                    ? 'bg-green-50 border-l-4 border-l-green-500 border border-green-200 hover:bg-green-100'
                     : post.status === 'failed'
-                    ? 'bg-red-50 text-red-700 border border-red-200'
-                    : 'bg-slate-100 text-slate-700 border border-slate-200'
+                    ? 'bg-red-50 border-l-4 border-l-red-500 border border-red-200 hover:bg-red-100'
+                    : 'bg-slate-50 border-l-4 border-l-slate-400 border border-slate-200 hover:bg-slate-100'
                 }`}
               >
-                <div className="font-medium truncate mb-1">{post.title || 'Untitled'}</div>
-                <div className="flex gap-1">
-                  {post.platforms.map((platform) => (
-                    <div key={platform}>{getPlatformIcon(platform)}</div>
-                  ))}
+                <div className="flex items-start justify-between gap-2 mb-1">
+                  {post.scheduled_for && (
+                    <span className={`font-semibold text-xs ${
+                      post.status === 'scheduled'
+                        ? 'text-blue-700'
+                        : post.status === 'published'
+                        ? 'text-green-700'
+                        : post.status === 'failed'
+                        ? 'text-red-700'
+                        : 'text-slate-700'
+                    }`}>
+                      {formatTime(post.scheduled_for)}
+                    </span>
+                  )}
+                  <div className="flex gap-1">
+                    {post.platforms.map((platform) => (
+                      <div key={platform}>{getPlatformIcon(platform)}</div>
+                    ))}
+                  </div>
                 </div>
+                <div className={`font-medium truncate ${
+                  post.status === 'scheduled'
+                    ? 'text-blue-900'
+                    : post.status === 'published'
+                    ? 'text-green-900'
+                    : post.status === 'failed'
+                    ? 'text-red-900'
+                    : 'text-slate-900'
+                }`}>
+                  {post.title || 'Untitled Post'}
+                </div>
+                {post.caption && (
+                  <div className={`text-xs mt-1 truncate ${
+                    post.status === 'scheduled'
+                      ? 'text-blue-600'
+                      : post.status === 'published'
+                      ? 'text-green-600'
+                      : post.status === 'failed'
+                      ? 'text-red-600'
+                      : 'text-slate-600'
+                  }`}>
+                    {post.caption}
+                  </div>
+                )}
               </div>
             ))}
           </div>
