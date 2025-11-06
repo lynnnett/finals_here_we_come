@@ -80,6 +80,7 @@ export function EnhancedAICoPilotView({ onCreatePost }: EnhancedAICoPilotViewPro
   const [loading, setLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [connectedPlatforms, setConnectedPlatforms] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -93,6 +94,7 @@ export function EnhancedAICoPilotView({ onCreatePost }: EnhancedAICoPilotViewPro
   useEffect(() => {
     if (user) {
       loadUserProfile();
+      loadConnectedPlatforms();
       createConversation();
     }
   }, [user]);
@@ -108,6 +110,22 @@ export function EnhancedAICoPilotView({ onCreatePost }: EnhancedAICoPilotViewPro
 
     if (data) {
       setUserProfile(data);
+    }
+  };
+
+  const loadConnectedPlatforms = async () => {
+    if (!user) return;
+
+    const { data } = await supabase
+      .from('social_accounts')
+      .select('platform')
+      .eq('user_id', user.id)
+      .eq('is_active', true);
+
+    if (data && data.length > 0) {
+      setConnectedPlatforms(data.map(acc => acc.platform));
+    } else {
+      setConnectedPlatforms(['Instagram', 'LinkedIn', 'Twitter', 'TikTok']);
     }
   };
 
@@ -156,10 +174,11 @@ export function EnhancedAICoPilotView({ onCreatePost }: EnhancedAICoPilotViewPro
     });
 
     try {
-      const contextInfo = userProfile ? {
-        company: userProfile.company_name,
-        industry: userProfile.industry,
-      } : {};
+      const contextInfo = {
+        company: userProfile?.company_name,
+        industry: userProfile?.industry,
+        platforms: connectedPlatforms.join(', '),
+      };
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-copilot`,
@@ -212,38 +231,101 @@ export function EnhancedAICoPilotView({ onCreatePost }: EnhancedAICoPilotViewPro
     onCreatePost?.(messageData);
   };
 
-  const quickPrompts = [
-    {
-      icon: '💡',
-      text: 'Brainstorm a week of content ideas',
-      prompt: `My company is ${userProfile?.company_name || 'a startup'} in the ${userProfile?.industry || 'tech'} industry. Give me 7 content ideas for this week across Instagram, TikTok, and LinkedIn.`,
-    },
-    {
-      icon: '🎯',
-      text: 'Create a content strategy',
-      prompt: 'Help me create a 30-day content strategy for my social media channels.',
-    },
-    {
-      icon: '📝',
-      text: 'Write a product announcement',
-      prompt: 'Help me write a compelling product announcement post for my new feature launch.',
-    },
-    {
-      icon: '📊',
-      text: 'Best posting times',
-      prompt: 'What are the best times to post on Instagram, TikTok, and LinkedIn for maximum engagement?',
-    },
-    {
-      icon: '🔥',
-      text: 'Trending hashtags',
-      prompt: 'What are the trending hashtags in my industry right now?',
-    },
-    {
-      icon: '✍️',
-      text: 'Improve my caption',
-      prompt: 'I have a post caption that needs improvement. Can you help make it more engaging?',
-    },
-  ];
+  const getQuickPrompts = () => {
+    const platforms = connectedPlatforms.length > 0
+      ? connectedPlatforms.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(', ')
+      : 'Instagram, LinkedIn, Twitter, and TikTok';
+
+    const industry = userProfile?.industry || 'your industry';
+    const company = userProfile?.company_name || 'your business';
+
+    return [
+      {
+        icon: '💡',
+        text: 'Brainstorm a Week of Content Ideas',
+        prompt: `Generate 7 diverse content ideas (one for each day) for ${company} in the ${industry} industry. Create content for ${platforms}. Include:
+- Monday: Educational tip
+- Tuesday: Behind-the-scenes
+- Wednesday: User-generated content prompt
+- Thursday: Product/service highlight
+- Friday: Fun/engagement question
+- Saturday: Industry news commentary
+- Sunday: Inspirational/community content
+
+Make each idea specific, actionable, and platform-appropriate.`,
+      },
+      {
+        icon: '🎯',
+        text: 'Create a Content Strategy',
+        prompt: `Generate a comprehensive 30-day content strategy framework for ${company} in the ${industry} industry on ${platforms}. Include:
+
+1. Primary goals (awareness, engagement, conversion)
+2. Content pillars (3-4 main themes)
+3. Platform-specific approach
+4. Key performance indicators to track
+5. Weekly content mix ratios
+6. Posting frequency recommendations
+
+Provide actionable insights tailored to ${industry}.`,
+      },
+      {
+        icon: '📝',
+        text: 'Write a Product Announcement',
+        prompt: `Create a compelling product announcement for ${company}. Include:
+
+1. Attention-grabbing headline
+2. Key features and benefits
+3. Target audience appeal
+4. Clear call-to-action
+5. Platform-optimized versions:
+   - Short and punchy for Twitter
+   - Professional and detailed for LinkedIn
+   - Visual and engaging for Instagram
+   - Creative and trend-focused for TikTok
+
+Make it exciting and shareable!`,
+      },
+      {
+        icon: '📊',
+        text: 'Best Posting Times',
+        prompt: `Analyze optimal posting times for ${company} in the ${industry} industry. Provide recommendations for ${platforms} including:
+
+1. Best times to post on each platform
+2. Industry-specific timing patterns
+3. Timezone considerations
+4. Frequency recommendations per platform
+5. Best days for different content types
+
+Include reasoning for each recommendation.`,
+      },
+      {
+        icon: '🔥',
+        text: 'Trending Hashtags',
+        prompt: `Provide relevant, trending hashtags for ${company} in the ${industry} industry. Include:
+
+1. 3-5 industry-specific hashtags
+2. 2-3 popular niche hashtags
+3. 1-2 broad trending hashtags (if relevant)
+4. Platform-specific hashtag recommendations for ${platforms}
+5. Warning about overused/spammy hashtags to avoid
+
+Explain why each hashtag is valuable.`,
+      },
+      {
+        icon: '✍️',
+        text: 'Improve My Caption',
+        prompt: `I need help optimizing a social media caption. Please provide:
+
+1. Grammar and spelling corrections
+2. Tone adjustment suggestions
+3. Engagement-boosting improvements
+4. Hashtag recommendations
+5. Character length optimization for ${platforms}
+
+Paste your caption below, and I'll help you improve it!`,
+      },
+    ];
+  };
 
   return (
     <div className="h-[calc(100vh-12rem)] flex gap-6">
@@ -373,15 +455,15 @@ export function EnhancedAICoPilotView({ onCreatePost }: EnhancedAICoPilotViewPro
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <h3 className="font-semibold text-slate-900 mb-4">Quick Prompts</h3>
           <div className="space-y-2">
-            {quickPrompts.map((prompt, index) => (
+            {getQuickPrompts().map((prompt, index) => (
               <button
                 key={index}
                 onClick={() => handleQuickPrompt(prompt.prompt)}
-                className="w-full text-left p-3 bg-slate-50 hover:bg-blue-50 rounded-lg transition-all group"
+                className="w-full text-left p-3 bg-slate-50 hover:bg-blue-50 border border-transparent hover:border-blue-200 rounded-lg transition-all group"
               >
                 <div className="flex items-start gap-3">
-                  <span className="text-2xl">{prompt.icon}</span>
-                  <span className="text-sm text-slate-700 group-hover:text-blue-700">
+                  <span className="text-xl flex-shrink-0">{prompt.icon}</span>
+                  <span className="text-sm font-medium text-slate-700 group-hover:text-blue-700">
                     {prompt.text}
                   </span>
                 </div>
@@ -391,11 +473,27 @@ export function EnhancedAICoPilotView({ onCreatePost }: EnhancedAICoPilotViewPro
         </div>
 
         <div className="bg-gradient-to-br from-blue-50 to-slate-50 rounded-xl p-4 border border-blue-100">
-          <h4 className="font-semibold text-slate-900 mb-2">Pro Tip</h4>
-          <p className="text-sm text-slate-600">
+          <h4 className="font-semibold text-slate-900 mb-2">💡 Pro Tip</h4>
+          <p className="text-sm text-slate-600 leading-relaxed">
             The more context you provide about your business and goals, the better recommendations I can give you!
           </p>
         </div>
+
+        {connectedPlatforms.length > 0 && (
+          <div className="bg-white rounded-xl border border-slate-200 p-4">
+            <h4 className="font-semibold text-slate-900 mb-3 text-sm">Connected Platforms</h4>
+            <div className="flex flex-wrap gap-2">
+              {connectedPlatforms.map((platform) => (
+                <span
+                  key={platform}
+                  className="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full border border-blue-200"
+                >
+                  {platform.charAt(0).toUpperCase() + platform.slice(1)}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
