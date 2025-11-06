@@ -179,6 +179,18 @@ export function EnhancedAICoPilotView({ onCreatePost }: EnhancedAICoPilotViewPro
 
       const data = await response.json();
 
+      if (data.error && data.error.includes('OpenAI')) {
+        const errorMessage: Message = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: 'The AI assistant is currently unavailable. Please contact support to configure the OpenAI API key.',
+          created_at: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+        setLoading(false);
+        return;
+      }
+
       const assistantMessage: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',
@@ -256,11 +268,11 @@ export function EnhancedAICoPilotView({ onCreatePost }: EnhancedAICoPilotViewPro
   ];
 
   return (
-    <div className="h-[calc(100vh-12rem)] flex gap-6">
-      <div className="flex-1 flex flex-col">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">AI Co-Pilot</h1>
-          <p className="text-slate-600">
+    <div className="h-[calc(100vh-12rem)] flex flex-col lg:flex-row gap-4 lg:gap-6">
+      <div className="flex-1 flex flex-col min-h-0">
+        <div className="mb-4 lg:mb-6">
+          <h1 className="text-2xl lg:text-3xl font-bold text-slate-900 mb-2">AI Co-Pilot</h1>
+          <p className="text-sm lg:text-base text-slate-600">
             Get intelligent content ideas and marketing strategies
             {userProfile?.company_name && (
               <span className="text-blue-600 font-medium"> for {userProfile.company_name}</span>
@@ -268,18 +280,18 @@ export function EnhancedAICoPilotView({ onCreatePost }: EnhancedAICoPilotViewPro
           </p>
         </div>
 
-        <div className="flex-1 bg-white rounded-xl border border-slate-200 flex flex-col">
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 bg-white rounded-xl border border-slate-200 flex flex-col min-h-0">
+          <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4">
             {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full">
-                <div className="bg-gradient-to-br from-blue-100 to-blue-50 p-4 rounded-2xl mb-6">
-                  <Sparkles className="w-12 h-12 text-blue-600" />
+              <div className="flex flex-col items-center justify-center h-full px-4">
+                <div className="bg-gradient-to-br from-blue-100 to-blue-50 p-4 rounded-2xl mb-4 lg:mb-6">
+                  <Sparkles className="w-10 h-10 lg:w-12 lg:h-12 text-blue-600" />
                 </div>
-                <div className="text-center max-w-md mb-8">
-                  <h3 className="text-xl font-semibold text-slate-900 mb-2">
+                <div className="text-center max-w-md mb-6 lg:mb-8">
+                  <h3 className="text-lg lg:text-xl font-semibold text-slate-900 mb-2">
                     How can I help you today?
                   </h3>
-                  <p className="text-slate-600">
+                  <p className="text-sm lg:text-base text-slate-600">
                     I'm your AI assistant specialized in social media marketing and content strategy
                   </p>
                 </div>
@@ -289,24 +301,24 @@ export function EnhancedAICoPilotView({ onCreatePost }: EnhancedAICoPilotViewPro
                 {messages.map((message) => (
                   <div
                     key={message.id}
-                    className={`flex gap-4 ${
+                    className={`flex gap-2 lg:gap-4 ${
                       message.role === 'user' ? 'justify-end' : 'justify-start'
                     }`}
                   >
                     {message.role === 'assistant' && (
-                      <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-                        <Sparkles className="w-4 h-4 text-white" />
+                      <div className="w-6 h-6 lg:w-8 lg:h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                        <Sparkles className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
                       </div>
                     )}
-                    <div className="max-w-[70%]">
+                    <div className="max-w-[85%] lg:max-w-[70%]">
                       <div
-                        className={`p-4 rounded-2xl ${
+                        className={`p-3 lg:p-4 rounded-2xl ${
                           message.role === 'user'
                             ? 'bg-blue-600 text-white'
                             : 'bg-slate-100 text-slate-900'
                         }`}
                       >
-                        <div className="whitespace-pre-wrap leading-relaxed prose prose-sm max-w-none">
+                        <div className="whitespace-pre-wrap leading-relaxed prose prose-sm max-w-none text-sm lg:text-base">
                           {message.role === 'assistant' ? (
                             <FormattedMessage content={message.content} />
                           ) : (
@@ -315,36 +327,38 @@ export function EnhancedAICoPilotView({ onCreatePost }: EnhancedAICoPilotViewPro
                         </div>
                       </div>
                       {message.role === 'assistant' && (
-                        <div className="mt-3 flex flex-wrap gap-2">
+                        <div className="mt-2 lg:mt-3 flex flex-wrap gap-2">
                           <button
                             onClick={() => handleCreatePost({ caption: message.content })}
-                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+                            className="px-3 lg:px-4 py-1.5 lg:py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs lg:text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 lg:gap-2"
                           >
-                            <PlusCircle className="w-4 h-4" />
-                            Create Post
+                            <PlusCircle className="w-3 h-3 lg:w-4 lg:h-4" />
+                            <span className="hidden sm:inline">Create Post</span>
+                            <span className="sm:hidden">Create</span>
                           </button>
                           <button
                             onClick={() => handleCreatePost({ caption: message.content, schedule: true })}
-                            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+                            className="px-3 lg:px-4 py-1.5 lg:py-2 bg-green-600 hover:bg-green-700 text-white text-xs lg:text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 lg:gap-2"
                           >
-                            <Calendar className="w-4 h-4" />
-                            Add to Calendar
+                            <Calendar className="w-3 h-3 lg:w-4 lg:h-4" />
+                            <span className="hidden sm:inline">Add to Calendar</span>
+                            <span className="sm:hidden">Schedule</span>
                           </button>
                         </div>
                       )}
                     </div>
                     {message.role === 'user' && (
-                      <div className="w-8 h-8 bg-slate-300 rounded-full flex-shrink-0" />
+                      <div className="w-6 h-6 lg:w-8 lg:h-8 bg-slate-300 rounded-full flex-shrink-0" />
                     )}
                   </div>
                 ))}
                 {loading && (
-                  <div className="flex gap-4 justify-start">
-                    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-                      <Sparkles className="w-4 h-4 text-white" />
+                  <div className="flex gap-2 lg:gap-4 justify-start">
+                    <div className="w-6 h-6 lg:w-8 lg:h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Sparkles className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
                     </div>
-                    <div className="bg-slate-100 p-4 rounded-2xl">
-                      <Loader className="w-5 h-5 text-slate-600 animate-spin" />
+                    <div className="bg-slate-100 p-3 lg:p-4 rounded-2xl">
+                      <Loader className="w-4 h-4 lg:w-5 lg:h-5 text-slate-600 animate-spin" />
                     </div>
                   </div>
                 )}
@@ -353,41 +367,41 @@ export function EnhancedAICoPilotView({ onCreatePost }: EnhancedAICoPilotViewPro
             )}
           </div>
 
-          <form onSubmit={handleSubmit} className="border-t border-slate-200 p-4">
-            <div className="flex gap-3">
+          <form onSubmit={handleSubmit} className="border-t border-slate-200 p-3 lg:p-4">
+            <div className="flex gap-2 lg:gap-3">
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask me anything about content strategy..."
-                className="flex-1 px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                placeholder="Ask me anything..."
+                className="flex-1 px-3 lg:px-4 py-2 lg:py-3 text-sm lg:text-base rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 disabled={loading}
               />
               <button
                 type="submit"
                 disabled={loading || !input.trim()}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 lg:px-6 py-2 lg:py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                <Send className="w-5 h-5" />
+                <Send className="w-4 h-4 lg:w-5 lg:h-5" />
               </button>
             </div>
           </form>
         </div>
       </div>
 
-      <div className="w-80 space-y-4">
+      <div className="w-full lg:w-80 space-y-4">
         <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <h3 className="font-semibold text-slate-900 mb-4">Quick Prompts</h3>
+          <h3 className="text-sm lg:text-base font-semibold text-slate-900 mb-3 lg:mb-4">Quick Prompts</h3>
           <div className="space-y-2">
-            {quickPrompts.map((prompt, index) => (
+            {quickPrompts.slice(0, 6).map((prompt, index) => (
               <button
                 key={index}
                 onClick={() => handleQuickPrompt(prompt.prompt)}
-                className="w-full text-left p-3 bg-slate-50 hover:bg-blue-50 rounded-lg transition-all group"
+                className="w-full text-left p-2.5 lg:p-3 bg-slate-50 hover:bg-blue-50 rounded-lg transition-all group"
               >
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">{prompt.icon}</span>
-                  <span className="text-sm text-slate-700 group-hover:text-blue-700">
+                <div className="flex items-start gap-2 lg:gap-3">
+                  <span className="text-xl lg:text-2xl">{prompt.icon}</span>
+                  <span className="text-xs lg:text-sm text-slate-700 group-hover:text-blue-700">
                     {prompt.text}
                   </span>
                 </div>
@@ -396,9 +410,9 @@ export function EnhancedAICoPilotView({ onCreatePost }: EnhancedAICoPilotViewPro
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-50 to-slate-50 rounded-xl p-4 border border-blue-100">
-          <h4 className="font-semibold text-slate-900 mb-2">Pro Tip</h4>
-          <p className="text-sm text-slate-600">
+        <div className="bg-gradient-to-br from-blue-50 to-slate-50 rounded-xl p-3 lg:p-4 border border-blue-100">
+          <h4 className="text-sm lg:text-base font-semibold text-slate-900 mb-2">Pro Tip</h4>
+          <p className="text-xs lg:text-sm text-slate-600">
             The more context you provide about your business and goals, the better recommendations I can give you!
           </p>
         </div>
