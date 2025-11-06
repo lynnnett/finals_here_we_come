@@ -4,13 +4,14 @@ import { LoginForm } from './components/Auth/LoginForm';
 import { MainLayout } from './components/Layout/MainLayout';
 import { Sidebar } from './components/Layout/Sidebar';
 import { DashboardView } from './components/Dashboard/DashboardView';
-import { AICoPilotView } from './components/AICoPilot/AICoPilotView';
+import { EnhancedAICoPilotView } from './components/AICoPilot/EnhancedAICoPilotView';
 import { CaptionGeneratorView } from './components/CaptionGenerator/CaptionGeneratorView';
-import { CalendarView } from './components/Calendar/CalendarView';
+import { EnhancedCalendarView } from './components/Calendar/EnhancedCalendarView';
 import { AssetStudioView } from './components/AssetStudio/AssetStudioView';
 import { AnalyticsView } from './components/Analytics/AnalyticsView';
 import { SettingsView } from './components/Settings/SettingsView';
 import { OnboardingModal } from './components/Onboarding/OnboardingModal';
+import { FloatingToolbar } from './components/Layout/FloatingToolbar';
 import { supabase } from './lib/supabase';
 
 function AppContent() {
@@ -58,11 +59,11 @@ function AppContent() {
       case 'dashboard':
         return <DashboardView />;
       case 'ai-copilot':
-        return <AICoPilotView />;
+        return <EnhancedAICoPilotView />;
       case 'caption-generator':
         return <CaptionGeneratorView />;
       case 'calendar':
-        return <CalendarView />;
+        return <EnhancedCalendarView />;
       case 'asset-studio':
         return <AssetStudioView />;
       case 'analytics':
@@ -82,6 +83,9 @@ function AppContent() {
           <MainLayout>{renderView()}</MainLayout>
         </div>
       </div>
+
+      <FloatingToolbar />
+
       <OnboardingModal
         isOpen={showOnboarding}
         onClose={() => setShowOnboarding(false)}
