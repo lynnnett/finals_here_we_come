@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, ArrowRight, ArrowLeft, Sparkles, Upload, Wand2, Calendar as CalendarIcon, Send, Save, Image as ImageIcon } from 'lucide-react';
+import { X, ArrowRight, ArrowLeft, Sparkles, Upload, Wand2, Calendar as CalendarIcon, Send, Save, Image as ImageIcon, Video } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { supabase } from '../../lib/supabase';
@@ -593,6 +593,17 @@ export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, 
                       placeholder="Customize your caption..."
                     />
                   </div>
+
+                  {selectedPlatforms.length > 0 && (customCaption || selectedCaption) && (
+                    <div className="bg-gradient-to-br from-blue-50 to-slate-50 rounded-lg p-6 border border-blue-100">
+                      <PlatformPostPreviews
+                        platforms={selectedPlatforms}
+                        caption={customCaption || selectedCaption}
+                        assets={uploadedAssets}
+                        postTitle={postTitle || topic}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -639,8 +650,13 @@ export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, 
                         {asset.type === 'image' ? (
                           <img src={asset.url} alt={`Asset ${index + 1}`} className="w-full h-full object-cover" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <ImageIcon className="w-12 h-12 text-slate-400" />
+                          <div className="relative w-full h-full bg-slate-900">
+                            <video src={asset.url} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                              <div className="bg-black/50 backdrop-blur-sm rounded-full p-3">
+                                <Video className="w-8 h-8 text-white" />
+                              </div>
+                            </div>
                           </div>
                         )}
                         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center">
