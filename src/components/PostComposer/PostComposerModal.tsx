@@ -593,17 +593,17 @@ export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, 
                       placeholder="Customize your caption..."
                     />
                   </div>
+                </div>
+              )}
 
-                  {selectedPlatforms.length > 0 && (customCaption || selectedCaption) && (
-                    <div className="bg-gradient-to-br from-blue-50 to-slate-50 rounded-lg p-6 border border-blue-100">
-                      <PlatformPostPreviews
-                        platforms={selectedPlatforms}
-                        caption={customCaption || selectedCaption}
-                        assets={uploadedAssets}
-                        postTitle={postTitle || topic}
-                      />
-                    </div>
-                  )}
+              {selectedPlatforms.length > 0 && (customCaption || selectedCaption) && (
+                <div className="bg-gradient-to-br from-blue-50 to-slate-50 rounded-lg p-6 border border-blue-100">
+                  <PlatformPostPreviews
+                    platforms={selectedPlatforms}
+                    caption={customCaption || selectedCaption}
+                    assets={uploadedAssets}
+                    postTitle={postTitle || topic}
+                  />
                 </div>
               )}
             </div>

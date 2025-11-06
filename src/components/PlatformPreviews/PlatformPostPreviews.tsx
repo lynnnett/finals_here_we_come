@@ -43,7 +43,7 @@ export function PlatformPostPreviews({ platforms, caption, assets, postTitle }: 
       </div>
 
       {firstAsset && (
-        <div className="aspect-square bg-slate-100">
+        <div className="relative aspect-square bg-slate-100">
           {renderMediaContent()}
           {isVideo && (
             <div className="absolute top-3 right-3">
