@@ -7,17 +7,14 @@ import { Sidebar } from './components/Layout/Sidebar';
 import { DashboardView } from './components/Dashboard/DashboardView';
 import { EnhancedAICoPilotView } from './components/AICoPilot/EnhancedAICoPilotView';
 import { CaptionGeneratorView } from './components/CaptionGenerator/CaptionGeneratorView';
-import { EnhancedCalendar } from './components/Calendar/EnhancedCalendar';
-import { PostDetailModal } from './components/Calendar/PostDetailModal';
-import { TemplatesView } from './components/Templates/TemplatesView';
-import { BrandAssetsView } from './components/BrandAssets/BrandAssetsView';
-import { ContentLibraryView } from './components/ContentLibrary/ContentLibraryView';
-import { DesignStudioView } from './components/DesignStudio/DesignStudioView';
+import { EnhancedCalendarView } from './components/Calendar/EnhancedCalendarView';
+import { ComprehensiveDesignStudio } from './components/DesignStudio/ComprehensiveDesignStudio';
 import { AssetStudioView } from './components/AssetStudio/AssetStudioView';
 import { AnalyticsView } from './components/Analytics/AnalyticsView';
 import { SettingsView } from './components/Settings/SettingsView';
 import { OnboardingModal } from './components/Onboarding/OnboardingModal';
 import { FloatingToolbar } from './components/Layout/FloatingToolbar';
+import { AccessibilityToolbar } from './components/Layout/AccessibilityToolbar';
 import { PostComposerModal } from './components/PostComposer/PostComposerModal';
 import { supabase } from './lib/supabase';
 
@@ -27,8 +24,6 @@ function AppContent() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showPostComposer, setShowPostComposer] = useState(false);
   const [postComposerData, setPostComposerData] = useState<any>(null);
-  const [selectedPost, setSelectedPost] = useState<any>(null);
-  const [showPostDetail, setShowPostDetail] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -52,31 +47,6 @@ function AppContent() {
 
   const handleCreatePostFromAI = (data: any) => {
     setPostComposerData(data);
-    setShowPostComposer(true);
-  };
-
-  const handleOpenPost = (post: any) => {
-    setSelectedPost(post);
-    setShowPostDetail(true);
-  };
-
-  const handleEditPost = (post: any) => {
-    setPostComposerData(post);
-    setShowPostComposer(true);
-    setShowPostDetail(false);
-  };
-
-  const handleUseTemplate = (template: any) => {
-    setPostComposerData({
-      topic: template.name,
-      initialCaption: template.content,
-      platforms: template.platforms,
-    });
-    setShowPostComposer(true);
-  };
-
-  const handleAddToCalendar = (content: string) => {
-    setPostComposerData({ initialCaption: content });
     setShowPostComposer(true);
   };
 
@@ -104,21 +74,15 @@ function AppContent() {
       case 'caption-generator':
         return <CaptionGeneratorView />;
       case 'calendar':
-        return <EnhancedCalendar onCreatePost={() => setShowPostComposer(true)} onOpenPost={handleOpenPost} />;
+        return <EnhancedCalendarView />;
       case 'design-studio':
-        return <DesignStudioView />;
+        return <ComprehensiveDesignStudio />;
       case 'asset-studio':
         return <AssetStudioView />;
       case 'analytics':
         return <AnalyticsView />;
       case 'settings':
         return <SettingsView />;
-      case 'templates':
-        return <TemplatesView onUseTemplate={handleUseTemplate} />;
-      case 'brand-assets':
-        return <BrandAssetsView />;
-      case 'content-library':
-        return <ContentLibraryView onEditPost={handleEditPost} />;
       default:
         return <DashboardView />;
     }
@@ -127,17 +91,13 @@ function AppContent() {
   return (
     <>
       <div className="min-h-screen bg-slate-50">
-        <MainLayout
-          activeView={activeView}
-          onNavigate={setActiveView}
-          onCreatePost={() => setShowPostComposer(true)}
-          onAddToCalendar={handleAddToCalendar}
-        >
+        <MainLayout activeView={activeView} onNavigate={setActiveView}>
           {renderView()}
         </MainLayout>
       </div>
 
       <FloatingToolbar />
+      <AccessibilityToolbar />
 
       <OnboardingModal
         isOpen={showOnboarding}
@@ -157,20 +117,6 @@ function AppContent() {
           if (activeView !== 'calendar') {
             setActiveView('calendar');
           }
-        }}
-      />
-
-      <PostDetailModal
-        post={selectedPost}
-        isOpen={showPostDetail}
-        onClose={() => {
-          setShowPostDetail(false);
-          setSelectedPost(null);
-        }}
-        onEdit={() => handleEditPost(selectedPost)}
-        onDelete={() => {
-          setShowPostDetail(false);
-          setSelectedPost(null);
         }}
       />
     </>

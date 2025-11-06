@@ -1,15 +1,14 @@
 import { useState } from 'react';
-import { Bell, User, LayoutDashboard, Sparkles, PenTool, Calendar, Image, BarChart3, Settings, Palette, Menu } from 'lucide-react';
+import { Bell, User, LayoutDashboard, Sparkles, PenTool, Calendar, Image, BarChart3, Settings, Palette } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { NotificationPanel } from './NotificationPanel';
 
 interface HeaderProps {
   activeView: string;
   onNavigate: (view: string) => void;
-  onToggleToolbar?: () => void;
 }
 
-export function Header({ activeView, onNavigate, onToggleToolbar }: HeaderProps) {
+export function Header({ activeView, onNavigate }: HeaderProps) {
   const { user, signOut } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
 
@@ -59,14 +58,6 @@ export function Header({ activeView, onNavigate, onToggleToolbar }: HeaderProps)
         </div>
 
         <div className="flex items-center gap-4">
-          <button
-            onClick={onToggleToolbar}
-            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-            title="Toggle Toolbar"
-          >
-            <Menu className="w-5 h-5 text-slate-600" />
-          </button>
-
           <button
             onClick={() => setShowNotifications(true)}
             className="relative p-2 hover:bg-slate-100 rounded-lg transition-colors"
