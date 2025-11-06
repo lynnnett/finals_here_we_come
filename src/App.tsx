@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { NotificationProvider } from './contexts/NotificationContext';
 import { LoginForm } from './components/Auth/LoginForm';
 import { MainLayout } from './components/Layout/MainLayout';
 import { Sidebar } from './components/Layout/Sidebar';
@@ -8,22 +7,18 @@ import { DashboardView } from './components/Dashboard/DashboardView';
 import { EnhancedAICoPilotView } from './components/AICoPilot/EnhancedAICoPilotView';
 import { CaptionGeneratorView } from './components/CaptionGenerator/CaptionGeneratorView';
 import { EnhancedCalendarView } from './components/Calendar/EnhancedCalendarView';
-import { ComprehensiveDesignStudio } from './components/DesignStudio/ComprehensiveDesignStudio';
+import { DesignStudioView } from './components/DesignStudio/DesignStudioView';
 import { AssetStudioView } from './components/AssetStudio/AssetStudioView';
 import { AnalyticsView } from './components/Analytics/AnalyticsView';
 import { SettingsView } from './components/Settings/SettingsView';
 import { OnboardingModal } from './components/Onboarding/OnboardingModal';
 import { FloatingToolbar } from './components/Layout/FloatingToolbar';
-import { AccessibilityToolbar } from './components/Layout/AccessibilityToolbar';
-import { PostComposerModal } from './components/PostComposer/PostComposerModal';
 import { supabase } from './lib/supabase';
 
 function AppContent() {
   const { user, loading } = useAuth();
   const [activeView, setActiveView] = useState('dashboard');
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [showPostComposer, setShowPostComposer] = useState(false);
-  const [postComposerData, setPostComposerData] = useState<any>(null);
 
   useEffect(() => {
     if (user) {
@@ -43,11 +38,6 @@ function AppContent() {
     if (data && !data.onboarding_completed) {
       setShowOnboarding(true);
     }
-  };
-
-  const handleCreatePostFromAI = (data: any) => {
-    setPostComposerData(data);
-    setShowPostComposer(true);
   };
 
   if (loading) {
@@ -70,13 +60,13 @@ function AppContent() {
       case 'dashboard':
         return <DashboardView />;
       case 'ai-copilot':
-        return <EnhancedAICoPilotView onCreatePost={handleCreatePostFromAI} />;
+        return <EnhancedAICoPilotView />;
       case 'caption-generator':
         return <CaptionGeneratorView />;
       case 'calendar':
         return <EnhancedCalendarView />;
       case 'design-studio':
-        return <ComprehensiveDesignStudio />;
+        return <DesignStudioView />;
       case 'asset-studio':
         return <AssetStudioView />;
       case 'analytics':
@@ -97,27 +87,10 @@ function AppContent() {
       </div>
 
       <FloatingToolbar />
-      <AccessibilityToolbar />
 
       <OnboardingModal
         isOpen={showOnboarding}
         onClose={() => setShowOnboarding(false)}
-      />
-
-      <PostComposerModal
-        isOpen={showPostComposer}
-        onClose={() => {
-          setShowPostComposer(false);
-          setPostComposerData(null);
-        }}
-        initialDraft={postComposerData}
-        onPostCreated={() => {
-          setShowPostComposer(false);
-          setPostComposerData(null);
-          if (activeView !== 'calendar') {
-            setActiveView('calendar');
-          }
-        }}
       />
     </>
   );
@@ -126,9 +99,7 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <NotificationProvider>
-        <AppContent />
-      </NotificationProvider>
+      <AppContent />
     </AuthProvider>
   );
 }

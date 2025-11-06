@@ -243,16 +243,6 @@ export function EnhancedAICoPilotView({ onCreatePost }: EnhancedAICoPilotViewPro
       text: 'Improve my caption',
       prompt: 'I have a post caption that needs improvement. Can you help make it more engaging?',
     },
-    {
-      icon: '💼',
-      text: 'Write LinkedIn feature launch caption',
-      prompt: 'Write a professional LinkedIn caption announcing a new feature launch for my product. Make it engaging and include a call-to-action.',
-    },
-    {
-      icon: '🚀',
-      text: 'Get best hashtags for product launch',
-      prompt: 'What are the best hashtags to use for a product launch on Instagram, TikTok, and LinkedIn? Give me a mix of popular and niche hashtags.',
-    },
   ];
 
   return (
@@ -314,22 +304,26 @@ export function EnhancedAICoPilotView({ onCreatePost }: EnhancedAICoPilotViewPro
                           )}
                         </div>
                       </div>
-                      {message.role === 'assistant' && (
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <button
-                            onClick={() => handleCreatePost({ caption: message.content })}
-                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
-                          >
-                            <PlusCircle className="w-4 h-4" />
-                            Create Post
-                          </button>
-                          <button
-                            onClick={() => handleCreatePost({ caption: message.content, schedule: true })}
-                            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
-                          >
-                            <Calendar className="w-4 h-4" />
-                            Add to Calendar
-                          </button>
+                      {message.role === 'assistant' && message.actionable && (
+                        <div className="mt-2 flex gap-2">
+                          {message.actionable.type === 'create_post' && (
+                            <button
+                              onClick={() => handleCreatePost(message.actionable?.data)}
+                              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+                            >
+                              <PlusCircle className="w-4 h-4" />
+                              Create Post
+                            </button>
+                          )}
+                          {message.actionable.type === 'add_to_calendar' && (
+                            <button
+                              onClick={() => handleCreatePost(message.actionable?.data)}
+                              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+                            >
+                              <Calendar className="w-4 h-4" />
+                              Add to Calendar
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>

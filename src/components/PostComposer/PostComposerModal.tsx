@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, ArrowRight, ArrowLeft, Sparkles, Upload, Wand2, Calendar as CalendarIcon, Send, Save } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useNotifications } from '../../contexts/NotificationContext';
 import { supabase } from '../../lib/supabase';
 
 interface PostComposerModalProps {
@@ -20,7 +19,6 @@ interface GeneratedCaption {
 
 export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, onPostCreated }: PostComposerModalProps) {
   const { user } = useAuth();
-  const { addNotification } = useNotifications();
   const [step, setStep] = useState(1);
   const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
 
@@ -72,20 +70,9 @@ export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, 
           setScheduledDate(new Date(initialDraft.scheduled_for));
           setScheduleType('later');
         }
-        if (initialDraft.schedule) {
-          setScheduleType('later');
-          if (initialDate) {
-            setScheduledDate(initialDate);
-          }
-        }
-        if (initialDraft.platforms && initialDraft.platforms.length === 0 && initialDraft.caption) {
-          setStep(1);
-        } else if (initialDraft.caption) {
-          setStep(2);
-        }
       }
     }
-  }, [isOpen, initialDraft, initialDate]);
+  }, [isOpen, initialDraft]);
 
   const triggerAutoSave = () => {
     if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
@@ -116,20 +103,8 @@ export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, 
       });
       setLastSaved(new Date());
       setHasUnsavedChanges(false);
-      addNotification({
-        type: 'success',
-        title: 'Draft Saved',
-        message: `"${postTitle || topic}" has been saved as a draft`,
-        duration: 3000,
-      });
     } catch (error) {
       console.error('Auto-save failed:', error);
-      addNotification({
-        type: 'error',
-        title: 'Save Failed',
-        message: 'Could not save your draft. Please try again.',
-        duration: 4000,
-      });
     } finally {
       setIsSaving(false);
     }
@@ -260,26 +235,12 @@ export function PostComposerModal({ isOpen, onClose, initialDate, initialDraft, 
 
       if (postError) throw postError;
 
-      addNotification({
-        type: 'success',
-        title: scheduleType === 'now' ? 'Post Published' : 'Post Scheduled',
-        message: scheduleType === 'now'
-          ? `"${postTitle || topic}" has been published`
-          : `"${postTitle || topic}" scheduled for ${scheduledFor?.toLocaleDateString()}`,
-        duration: 5000,
-      });
-
       onPostCreated?.();
       onClose();
       resetForm();
     } catch (error) {
       console.error('Error creating post:', error);
-      addNotification({
-        type: 'error',
-        title: 'Post Creation Failed',
-        message: 'Could not create your post. Please try again.',
-        duration: 4000,
-      });
+      alert('Failed to create post. Please try again.');
     } finally {
       setIsSaving(false);
     }

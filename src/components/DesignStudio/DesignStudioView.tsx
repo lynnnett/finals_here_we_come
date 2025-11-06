@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import { Sparkles, Layout, Image, Type, Palette, Download, Wand2, Grid3x3, Search, Filter } from 'lucide-react';
-import { EnhancedInteractiveCanvas } from './EnhancedInteractiveCanvas';
-import { useNotifications } from '../../contexts/NotificationContext';
 
 interface Template {
   id: string;
@@ -27,7 +25,6 @@ interface DesignElement {
 }
 
 export function DesignStudioView() {
-  const { addNotification } = useNotifications();
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [activeTab, setActiveTab] = useState<'templates' | 'design'>('templates');
   const [searchQuery, setSearchQuery] = useState('');
@@ -111,21 +108,32 @@ export function DesignStudioView() {
   const handleTemplateSelect = (template: Template) => {
     setSelectedTemplate(template);
     setActiveTab('design');
-    addNotification({
-      type: 'success',
-      title: 'Template Selected',
-      message: `"${template.name}" is ready for editing`,
-      duration: 3000,
-    });
-  };
-
-  const handleExport = () => {
-    addNotification({
-      type: 'success',
-      title: 'Design Exported',
-      message: 'Your design has been exported successfully',
-      duration: 3000,
-    });
+    setElements([
+      {
+        id: '1',
+        type: 'text',
+        content: 'Your Headline Here',
+        x: 50,
+        y: 100,
+        width: 980,
+        height: 120,
+        fontSize: 72,
+        color: '#1e293b',
+        fontWeight: 'bold',
+      },
+      {
+        id: '2',
+        type: 'text',
+        content: 'Add your message here',
+        x: 50,
+        y: 250,
+        width: 980,
+        height: 60,
+        fontSize: 32,
+        color: '#64748b',
+        fontWeight: 'normal',
+      },
+    ]);
   };
 
   const generateAiSuggestions = () => {
@@ -256,7 +264,193 @@ export function DesignStudioView() {
       )}
 
       {activeTab === 'design' && selectedTemplate && (
-        <EnhancedInteractiveCanvas template={selectedTemplate} onExport={handleExport} />
+        <div className="flex-1 flex gap-6 overflow-hidden">
+          <div className="w-20 bg-white rounded-xl border border-slate-200 p-3 flex flex-col items-center gap-4">
+            <button className="p-3 rounded-lg hover:bg-blue-50 text-slate-700 hover:text-blue-600 transition-colors group">
+              <Type className="w-6 h-6" />
+            </button>
+            <button className="p-3 rounded-lg hover:bg-blue-50 text-slate-700 hover:text-blue-600 transition-colors group">
+              <Image className="w-6 h-6" />
+            </button>
+            <button className="p-3 rounded-lg hover:bg-blue-50 text-slate-700 hover:text-blue-600 transition-colors group">
+              <Layout className="w-6 h-6" />
+            </button>
+            <button className="p-3 rounded-lg hover:bg-blue-50 text-slate-700 hover:text-blue-600 transition-colors group">
+              <Palette className="w-6 h-6" />
+            </button>
+            <div className="flex-1" />
+            <button
+              onClick={generateAiSuggestions}
+              className="p-3 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white hover:shadow-lg transition-all"
+            >
+              <Wand2 className="w-6 h-6" />
+            </button>
+          </div>
+
+          <div className="flex-1 bg-slate-100 rounded-xl border border-slate-200 p-8 flex items-center justify-center overflow-auto">
+            <div
+              className="bg-white shadow-2xl relative"
+              style={{
+                width: selectedTemplate.width / 2,
+                height: selectedTemplate.height / 2,
+              }}
+            >
+              <img
+                src={selectedTemplate.thumbnail}
+                alt={selectedTemplate.name}
+                className="w-full h-full object-cover"
+              />
+              {elements.map((element) => (
+                <div
+                  key={element.id}
+                  className="absolute border-2 border-dashed border-blue-500 hover:border-blue-600 cursor-move"
+                  style={{
+                    left: element.x / 2,
+                    top: element.y / 2,
+                    width: element.width / 2,
+                    height: element.height / 2,
+                  }}
+                >
+                  {element.type === 'text' && (
+                    <div
+                      className="w-full h-full flex items-center justify-center"
+                      style={{
+                        fontSize: element.fontSize ? element.fontSize / 2 : 16,
+                        color: element.color,
+                        fontWeight: element.fontWeight,
+                      }}
+                    >
+                      {element.content}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {showAiPanel && (
+            <div className="w-80 bg-white rounded-xl border border-slate-200 p-6 overflow-y-auto">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg">
+                    <Sparkles className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-slate-900">AI Suggestions</h3>
+                </div>
+                <button
+                  onClick={() => setShowAiPanel(false)}
+                  className="text-slate-400 hover:text-slate-600"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="space-y-4 mb-6">
+                <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
+                  <div className="flex items-start gap-3">
+                    <Wand2 className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h4 className="font-medium text-slate-900 mb-1">Smart Design Tips</h4>
+                      <p className="text-sm text-slate-600">
+                        Based on your content and platform, here are AI-powered suggestions
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {aiSuggestions.map((suggestion, index) => (
+                  <div
+                    key={index}
+                    className="p-4 bg-white border border-slate-200 rounded-lg hover:border-blue-300 hover:shadow-sm transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-semibold flex-shrink-0">
+                        {index + 1}
+                      </div>
+                      <p className="text-sm text-slate-700 group-hover:text-slate-900">
+                        {suggestion}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-3 rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30">
+                <Wand2 className="w-5 h-5" />
+                Apply All Suggestions
+              </button>
+            </div>
+          )}
+
+          {!showAiPanel && (
+            <div className="w-80 bg-white rounded-xl border border-slate-200 p-6 overflow-y-auto">
+              <h3 className="font-semibold text-slate-900 mb-6">Properties</h3>
+
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Canvas Size
+                  </label>
+                  <div className="p-3 bg-slate-50 rounded-lg">
+                    <p className="text-sm text-slate-900 font-medium">
+                      {selectedTemplate.width} × {selectedTemplate.height}
+                    </p>
+                    <p className="text-xs text-slate-600 mt-1">
+                      {selectedTemplate.platform === 'instagram' ? 'Instagram Post' : selectedTemplate.platform}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Background
+                  </label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4'].map((color) => (
+                      <button
+                        key={color}
+                        className="aspect-square rounded-lg border-2 border-slate-200 hover:border-slate-400 transition-colors"
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Text Style
+                  </label>
+                  <div className="space-y-2">
+                    <select className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                      <option>Inter</option>
+                      <option>Helvetica</option>
+                      <option>Arial</option>
+                      <option>Georgia</option>
+                    </select>
+                    <div className="flex gap-2">
+                      <button className="flex-1 px-3 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 font-bold">
+                        B
+                      </button>
+                      <button className="flex-1 px-3 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 italic">
+                        I
+                      </button>
+                      <button className="flex-1 px-3 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 underline">
+                        U
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-6 border-t border-slate-200">
+                  <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2">
+                    <Download className="w-5 h-5" />
+                    Export Design
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

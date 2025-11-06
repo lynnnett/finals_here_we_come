@@ -19,14 +19,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-
-      if (session?.user) {
-        await ensureUserProfile(session.user);
-      }
-
       setLoading(false);
     });
 
@@ -34,33 +29,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (async () => {
         setSession(session);
         setUser(session?.user ?? null);
-
-        if (session?.user) {
-          await ensureUserProfile(session.user);
-        }
-
         setLoading(false);
       })();
     });
 
     return () => subscription.unsubscribe();
   }, []);
-
-  const ensureUserProfile = async (user: User) => {
-    const { data: existingUser } = await supabase
-      .from('users')
-      .select('id')
-      .eq('id', user.id)
-      .maybeSingle();
-
-    if (!existingUser) {
-      await supabase.from('users').insert({
-        id: user.id,
-        email: user.email!,
-        full_name: user.user_metadata?.full_name || null,
-      });
-    }
-  };
 
   const signUp = async (email: string, password: string, fullName?: string) => {
     const { data, error } = await supabase.auth.signUp({
