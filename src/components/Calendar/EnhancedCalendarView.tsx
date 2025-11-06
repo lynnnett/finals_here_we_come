@@ -63,7 +63,33 @@ export function EnhancedCalendarView() {
       .order('scheduled_for', { ascending: true });
 
     if (!error && data) {
+      await updatePastPostsToPublished(data);
       setPosts(data);
+    }
+  };
+
+  const updatePastPostsToPublished = async (postsData: CalendarPost[]) => {
+    const now = new Date();
+    const postsToUpdate: string[] = [];
+
+    for (const post of postsData) {
+      if (post.status === 'scheduled' && post.scheduled_for) {
+        const scheduledDate = new Date(post.scheduled_for);
+        if (scheduledDate < now) {
+          postsToUpdate.push(post.id);
+          post.status = 'published';
+        }
+      }
+    }
+
+    if (postsToUpdate.length > 0) {
+      await supabase
+        .from('posts')
+        .update({
+          status: 'published',
+          published_at: now.toISOString(),
+        })
+        .in('id', postsToUpdate);
     }
   };
 
@@ -420,22 +446,22 @@ export function EnhancedCalendarView() {
         </div>
 
         <div className="bg-gradient-to-br from-blue-50 to-slate-50 rounded-xl p-4 border border-blue-100">
-          <div className="flex items-center gap-4 text-sm">
+          <div className="flex items-center gap-4 text-sm flex-wrap">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-blue-600 rounded" />
-              <span className="text-slate-700">Scheduled</span>
+              <div className="w-3 h-3 bg-blue-500 rounded" />
+              <span className="text-slate-700 font-medium">Scheduled</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-green-600 rounded" />
-              <span className="text-slate-700">Published</span>
+              <div className="w-3 h-3 bg-green-500 rounded" />
+              <span className="text-slate-700 font-medium">Published</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-slate-400 rounded" />
-              <span className="text-slate-700">Draft</span>
+              <span className="text-slate-700 font-medium">Draft</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-red-600 rounded" />
-              <span className="text-slate-700">Calendar Event</span>
+              <div className="w-3 h-3 bg-red-500 rounded" />
+              <span className="text-slate-700 font-medium">Failed</span>
             </div>
           </div>
         </div>
